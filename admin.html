@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Dispatch English Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1C1B19; --panel:#252320; --panel-line:#3A3631;
+    --amber:#F2A71B; --cream:#F4F1EA; --cream-dim:#B8B3A8; --green:#5C9D6B; --red:#D6553F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--cream); font-family:'Inter',sans-serif; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px; }
+  .wrap{width:100%; max-width:720px;}
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em; color:var(--amber); text-transform:uppercase; margin-bottom:6px; }
+  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:28px; text-transform:uppercase;
+    margin-bottom:24px; border-bottom:3px solid var(--amber); padding-bottom:16px; }
+  .card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:4px; padding:24px; margin-bottom:20px; }
+  label{ display:block; font-size:13px; color:var(--cream-dim); margin-bottom:8px; }
+  input[type=text],input[type=password]{ width:100%; background:var(--bg); border:1px solid var(--panel-line); color:var(--cream);
+    padding:12px 14px; font-size:15px; border-radius:3px; font-family:'Inter',sans-serif; margin-bottom:14px; }
+  input:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
+  button{ background:var(--amber); color:var(--bg); border:none; font-family:'Oswald',sans-serif; font-weight:600;
+    letter-spacing:0.04em; text-transform:uppercase; font-size:14px; padding:12px 22px; border-radius:3px; cursor:pointer; }
+  button:disabled{ background:var(--panel-line); color:var(--cream-dim); cursor:not-allowed; }
+  button:hover:not(:disabled){ background:#ffba3d; }
+  .msg{ font-size:13px; margin-top:10px; }
+  .msg.error{ color:var(--red); }
+  .msg.success{ color:var(--green); }
+  .link-row{ display:flex; gap:8px; align-items:center; background:var(--bg); border:1px solid var(--panel-line);
+    padding:10px 14px; border-radius:3px; margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:13px; word-break:break-all; }
+  .link-row span{ flex:1; }
+  .copy-btn{ padding:6px 14px; font-size:12px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--panel-line); }
+  th{ color:var(--cream-dim); font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
+  .status-pill{ font-family:'JetBrains Mono',monospace; font-size:11px; padding:3px 9px; border-radius:20px; }
+  .status-pending{ background:rgba(242,167,27,0.15); color:var(--amber); }
+  .status-completed{ background:rgba(92,157,107,0.15); color:var(--green); }
+  .hidden{ display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Dispatch Floor // Admin</div>
+  <h1>English Assessment — Admin Panel</h1>
+
+  <div class="card" id="login-card">
+    <label for="pw">Admin password</label>
+    <input type="password" id="pw" placeholder="Enter password">
+    <button id="btn-login">Unlock</button>
+    <div class="msg error" id="login-msg"></div>
+  </div>
+
+  <div id="main-area" class="hidden">
+    <div class="card">
+      <label for="emp-name">Employee name</label>
+      <input type="text" id="emp-name" placeholder="e.g. J. Alvarez">
+      <button id="btn-generate">Generate Link</button>
+      <div class="msg" id="gen-msg"></div>
+      <div class="link-row hidden" id="link-row">
+        <span id="link-text"></span>
+        <button class="copy-btn" id="btn-copy">Copy</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; color:var(--cream-dim); text-transform:uppercase;">All employees</span>
+        <button id="btn-refresh" style="padding:8px 16px; font-size:12px;">Refresh</button>
+      </div>
+      <table id="emp-table">
+        <thead><tr><th>Name</th><th>Status</th><th>Link</th></tr></thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== FILL THESE IN AFTER YOU CREATE YOUR SUPABASE PROJECT ======
+const CONFIG = {
+  SUPABASE_URL: 'https://ymaxtkaqfspsjaunfmuq.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYXh0a2FxZnNwc2phdW5mbXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzY0NzQsImV4cCI6MjA5NzQ1MjQ3NH0.VchQxSTvkt5EczAyNQ4YuMLCaNqK1B9qKQX0waHCdAc',
+  TEST_PAGE_URL: 'https://ugl-update.github.io/english-level-evaluation/',
+};
+// ===================================================================
+
+let adminPassword = '';
+
+function $(id){ return document.getElementById(id); }
+function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
+async function callFn(name, body){
+  const res = await fetch(fnUrl(name), {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+$('btn-login').addEventListener('click', async ()=>{
+  const pw = $('pw').value;
+  if(!pw) return;
+  try{
+    // Validate by attempting a list call
+    await callFn('list-employees', { password: pw });
+    adminPassword = pw;
+    $('login-card').classList.add('hidden');
+    $('main-area').classList.remove('hidden');
+    refreshList();
+  } catch(e){
+    $('login-msg').textContent = e.message;
+  }
+});
+
+$('btn-generate').addEventListener('click', async ()=>{
+  const name = $('emp-name').value.trim();
+  const msg = $('gen-msg');
+  msg.className='msg'; msg.textContent='';
+  if(!name){ msg.className='msg error'; msg.textContent='Enter a name first.'; return; }
+  try{
+    const { token } = await callFn('create-employee', { password: adminPassword, name });
+    const link = `${CONFIG.TEST_PAGE_URL}?token=${token}`;
+    $('link-row').classList.remove('hidden');
+    $('link-text').textContent = link;
+    $('btn-copy').onclick = ()=>{ navigator.clipboard.writeText(link); $('btn-copy').textContent='Copied!'; setTimeout(()=>$('btn-copy').textContent='Copy',1500); };
+    msg.className='msg success'; msg.textContent=`Link generated for ${name}.`;
+    $('emp-name').value='';
+    refreshList();
+  } catch(e){
+    msg.className='msg error'; msg.textContent=e.message;
+  }
+});
+
+async function refreshList(){
+  try{
+    const { employees } = await callFn('list-employees', { password: adminPassword });
+    const tbody = $('emp-tbody');
+    tbody.innerHTML='';
+    employees.forEach(emp=>{
+      const link = `${CONFIG.TEST_PAGE_URL}?token=${emp.token}`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${emp.name}</td>
+        <td><span class="status-pill status-${emp.status}">${emp.status}</span></td>
+        <td><a href="${link}" target="_blank" style="color:var(--amber); font-family:'JetBrains Mono',monospace; font-size:11px;">open link</a></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch(e){
+    console.error(e);
+  }
+}
+$('btn-refresh').addEventListener('click', refreshList);
+</script>
+</body>
+</html>

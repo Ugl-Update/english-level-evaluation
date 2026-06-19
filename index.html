@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dispatch Floor — English Proficiency Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1C1B19; --panel:#252320; --panel-line:#3A3631;
+    --amber:#F2A71B; --rust:#C8502E; --steel:#5C7A89;
+    --cream:#F4F1EA; --cream-dim:#B8B3A8; --green:#5C9D6B; --red:#D6553F;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--cream); font-family:'Inter',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px; }
+  .wrap{width:100%; max-width:680px;}
+  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+    color:var(--amber); text-transform:uppercase; margin-bottom:6px; }
+  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:clamp(24px,5vw,32px);
+    text-transform:uppercase; line-height:1.1; margin-bottom:24px;
+    border-bottom:3px solid var(--amber); padding-bottom:16px; }
+  .route{ position:relative; display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; padding:0 60px; }
+  .route::before{ content:""; position:absolute; top:50%; left:74px; right:74px; height:3px;
+    background:repeating-linear-gradient(to right, var(--panel-line) 0 10px, transparent 10px 18px); transform:translateY(-50%); z-index:0; }
+  .checkpoint{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .checkpoint .dot{ width:14px; height:14px; border-radius:50%; background:var(--panel); border:2px solid var(--panel-line); transition:all .3s; }
+  .checkpoint.done .dot{ background:var(--green); border-color:var(--green); }
+  .checkpoint.active .dot{ background:var(--amber); border-color:var(--amber); box-shadow:0 0 0 4px rgba(242,167,27,0.2); }
+  .checkpoint .label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; color:var(--cream-dim); text-transform:uppercase; }
+  .checkpoint.active .label{ color:var(--amber); }
+  .checkpoint.done .label{ color:var(--green); }
+  .screen{ display:none; } .screen.show{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:4px; padding:28px; }
+  .tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em;
+    color:var(--bg); background:var(--amber); padding:3px 9px; border-radius:2px; text-transform:uppercase; margin-bottom:14px; }
+  .qcount{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cream-dim); margin-bottom:10px; }
+  .qtext{ font-size:18px; font-weight:500; line-height:1.4; margin-bottom:20px; }
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .opt{ text-align:left; background:var(--bg); border:1px solid var(--panel-line); color:var(--cream);
+    padding:13px 16px; border-radius:3px; font-size:15px; cursor:pointer; font-family:'Inter',sans-serif; transition:border-color .15s, background .15s; }
+  .opt:hover{ border-color:var(--steel); }
+  .opt.selected{ border-color:var(--amber); background:rgba(242,167,27,0.08); }
+  .nav{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+  button.primary{ background:var(--amber); color:var(--bg); border:none; font-family:'Oswald',sans-serif; font-weight:600;
+    letter-spacing:0.04em; text-transform:uppercase; font-size:14px; padding:13px 26px; border-radius:3px; cursor:pointer; }
+  button.primary:disabled{ background:var(--panel-line); color:var(--cream-dim); cursor:not-allowed; }
+  button.primary:hover:not(:disabled){ background:#ffba3d; }
+  .prompt-box{ background:var(--bg); border-left:3px solid var(--amber); padding:16px 18px; margin-bottom:18px; font-size:16px; line-height:1.5; }
+  textarea{ width:100%; min-height:160px; background:var(--bg); border:1px solid var(--panel-line); color:var(--cream);
+    padding:14px; font-size:15px; border-radius:3px; font-family:'Inter',sans-serif; resize:vertical; }
+  textarea:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
+  .rec-row{ display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+  .rec-btn{ background:var(--rust); color:var(--cream); border:none; font-family:'JetBrains Mono',monospace; font-size:13px;
+    letter-spacing:0.05em; padding:10px 18px; border-radius:3px; cursor:pointer; }
+  .rec-btn.recording{ background:var(--red); animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+  .rec-status{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cream-dim); }
+  audio{ width:100%; margin-top:6px; }
+  .center-msg{ text-align:center; padding:60px 20px; }
+  .center-msg h2{ font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:10px; }
+  .center-msg p{ color:var(--cream-dim); }
+  .spinner{ width:28px; height:28px; border:3px solid var(--panel-line); border-top-color:var(--amber); border-radius:50%;
+    animation:spin 0.8s linear infinite; margin:0 auto 16px; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  footer{ margin-top:40px; font-size:12px; color:var(--cream-dim); text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Dispatch Floor // Personnel Evaluation</div>
+  <h1>English Proficiency Check</h1>
+  <div class="route" id="route"></div>
+
+  <div class="screen show" id="screen-loading">
+    <div class="card center-msg"><div class="spinner"></div><p>Loading your test…</p></div>
+  </div>
+
+  <div class="screen" id="screen-error">
+    <div class="card center-msg">
+      <h2 style="color:var(--red);">Can't load this test</h2>
+      <p id="error-msg">Something went wrong.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-mcq">
+    <div class="card">
+      <div class="tag" id="mcq-tag"></div>
+      <div class="qcount" id="mcq-qcount"></div>
+      <div class="qtext" id="mcq-qtext"></div>
+      <div class="options" id="mcq-options"></div>
+      <div class="nav"><button class="primary" id="btn-mcq-next" disabled>Next</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-written">
+    <div class="card">
+      <div class="tag" id="written-tag"></div>
+      <div class="prompt-box" id="written-prompt"></div>
+      <textarea id="written-input" placeholder="Type your response…"></textarea>
+      <div class="nav"><button class="primary" id="btn-written-next" disabled>Next</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-speak">
+    <div class="card">
+      <div class="tag" id="speak-tag"></div>
+      <div class="qcount" id="speak-qcount"></div>
+      <div class="prompt-box" id="speak-prompt"></div>
+      <div class="rec-row">
+        <button class="rec-btn" id="btn-record">● Record</button>
+        <span class="rec-status" id="rec-status">Not recorded yet</span>
+      </div>
+      <audio id="speak-audio" controls style="display:none;"></audio>
+      <div class="nav"><button class="primary" id="btn-speak-next">Next</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-submitting">
+    <div class="card center-msg"><div class="spinner"></div><p>Submitting your results…</p></div>
+  </div>
+
+  <div class="screen" id="screen-submit-error">
+    <div class="card center-msg">
+      <h2 style="color:var(--red);">Submission failed</h2>
+      <p id="submit-error-msg" style="margin-bottom:18px;">Check your connection and try again.</p>
+      <button class="primary" id="btn-retry-submit">Try Again</button>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-done">
+    <div class="card center-msg">
+      <h2 style="color:var(--green);">Submitted</h2>
+      <p>Thanks — your responses have been recorded. You can close this page.</p>
+    </div>
+  </div>
+
+  <footer>Internal use only</footer>
+</div>
+
+<script>
+// ====== FILL THESE IN AFTER YOU CREATE YOUR SUPABASE PROJECT ======
+const CONFIG = {
+  SUPABASE_URL: 'https://ymaxtkaqfspsjaunfmuq.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYXh0a2FxZnNwc2phdW5mbXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzY0NzQsImV4cCI6MjA5NzQ1MjQ3NH0.VchQxSTvkt5EczAyNQ4YuMLCaNqK1B9qKQX0waHCdAc',
+};
+// ===================================================================
+
+function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
+async function callFn(name, body){
+  const res = await fetch(fnUrl(name), {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}` },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+const TIERS = [
+  {key:'intermediate', label:'Intermediate'},
+  {key:'advanced', label:'Advanced'}
+];
+
+let token = new URLSearchParams(window.location.search).get('token');
+let testData = null;
+let tierIdx = 0;
+let mcqList = [];
+let mcqIdx = 0;
+let speakIdx = 0;
+let answers = { intermediate:{vocab:{},grammar:{}}, advanced:{vocab:{},grammar:{}} };
+let written = { intermediate:'', advanced:'' };
+let audioBase64 = { intermediate:[null,null], advanced:[null,null] };
+let mediaStream=null, mediaRecorder=null, chunks=[];
+
+function $(id){ return document.getElementById(id); }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $(id).classList.add('show'); }
+
+function renderRoute(){
+  const route = $('route');
+  route.innerHTML = '';
+  TIERS.forEach((t,i)=>{
+    const div = document.createElement('div');
+    let cls='checkpoint';
+    if(i<tierIdx) cls+=' done';
+    else if(i===tierIdx) cls+=' active';
+    div.className=cls;
+    div.innerHTML = `<div class="dot"></div><div class="label">${t.label}</div>`;
+    route.appendChild(div);
+  });
+}
+
+async function init(){
+  if(!token){
+    $('error-msg').textContent = "No test link token found. Use the link your manager sent you.";
+    showScreen('screen-error');
+    return;
+  }
+  try{
+    testData = await callFn('get-questions', { token });
+    renderRoute();
+    buildMcqList();
+    showScreen('screen-mcq');
+    renderMcq();
+  } catch(e){
+    $('error-msg').textContent = e.message;
+    showScreen('screen-error');
+  }
+}
+
+function buildMcqList(){
+  const tier = TIERS[tierIdx];
+  const t = testData.tiers[tier.key];
+  mcqList = [
+    ...t.vocab.map(q=>({...q, category:'vocab'})),
+    ...t.grammar.map(q=>({...q, category:'grammar'})),
+  ];
+  mcqIdx = 0;
+}
+
+function renderMcq(){
+  const tier = TIERS[tierIdx];
+  const q = mcqList[mcqIdx];
+  $('mcq-tag').textContent = `${tier.label} — ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
+  $('mcq-qcount').textContent = `Question ${mcqIdx+1} of ${mcqList.length}`;
+  $('mcq-qtext').textContent = q.text;
+  const optsDiv = $('mcq-options');
+  optsDiv.innerHTML='';
+  q.options.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    b.className='opt'; b.textContent = opt;
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#mcq-options .opt').forEach(o=>o.classList.remove('selected'));
+      b.classList.add('selected');
+      answers[tier.key][q.category][q.id] = i;
+      $('btn-mcq-next').disabled = false;
+    });
+    optsDiv.appendChild(b);
+  });
+  const existing = answers[tier.key][q.category][q.id];
+  $('btn-mcq-next').disabled = existing===undefined;
+  if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
+  $('btn-mcq-next').textContent = (mcqIdx===mcqList.length-1) ? 'Continue →' : 'Next';
+}
+
+$('btn-mcq-next').addEventListener('click', ()=>{
+  if(mcqIdx < mcqList.length-1){
+    mcqIdx++; renderMcq();
+  } else {
+    renderWritten();
+    showScreen('screen-written');
+  }
+});
+
+function renderWritten(){
+  const tier = TIERS[tierIdx];
+  $('written-tag').textContent = `${tier.label} — Written Response`;
+  $('written-prompt').textContent = testData.tiers[tier.key].written;
+  $('written-input').value = written[tier.key] || '';
+  $('btn-written-next').disabled = !($('written-input').value.trim().length);
+}
+$('written-input').addEventListener('input', e=>{
+  $('btn-written-next').disabled = !(e.target.value.trim().length);
+});
+$('btn-written-next').addEventListener('click', ()=>{
+  const tier = TIERS[tierIdx];
+  written[tier.key] = $('written-input').value.trim();
+  speakIdx = 0;
+  renderSpeak();
+  showScreen('screen-speak');
+});
+
+function renderSpeak(){
+  const tier = TIERS[tierIdx];
+  const prompts = testData.tiers[tier.key].speaking;
+  $('speak-tag').textContent = `${tier.label} — Speaking`;
+  $('speak-qcount').textContent = `Prompt ${speakIdx+1} of ${prompts.length}`;
+  $('speak-prompt').textContent = prompts[speakIdx];
+  const audioEl = $('speak-audio');
+  const existing = audioBase64[tier.key][speakIdx];
+  if(existing){
+    audioEl.src = 'data:audio/webm;base64,'+existing;
+    audioEl.style.display='block';
+    $('rec-status').textContent='Recorded ✓';
+  } else {
+    audioEl.style.display='none';
+    $('rec-status').textContent='Not recorded yet';
+  }
+  $('btn-record').classList.remove('recording');
+  $('btn-record').textContent='● Record';
+  const isLastTier = tierIdx === TIERS.length-1;
+  const isLastPrompt = speakIdx === prompts.length-1;
+  $('btn-speak-next').textContent = (isLastPrompt && isLastTier) ? 'Submit Test →' :
+    (isLastPrompt) ? `Continue to ${TIERS[tierIdx+1].label} →` : 'Next';
+}
+
+$('btn-record').addEventListener('click', async ()=>{
+  const btn = $('btn-record');
+  if(btn.classList.contains('recording')){ mediaRecorder.stop(); return; }
+  try{
+    if(!mediaStream) mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    chunks=[];
+    mediaRecorder = new MediaRecorder(mediaStream);
+    mediaRecorder.ondataavailable = e=>chunks.push(e.data);
+    mediaRecorder.onstop = async ()=>{
+      const blob = new Blob(chunks, {type:'audio/webm'});
+      const b64 = await blobToBase64(blob);
+      const tier = TIERS[tierIdx];
+      audioBase64[tier.key][speakIdx] = b64;
+      renderSpeak();
+    };
+    mediaRecorder.start();
+    btn.classList.add('recording'); btn.textContent='■ Stop';
+    $('rec-status').textContent='Recording…';
+  } catch(err){
+    $('rec-status').textContent='Microphone access denied or unavailable.';
+  }
+});
+
+$('btn-speak-next').addEventListener('click', async ()=>{
+  const tier = TIERS[tierIdx];
+  const prompts = testData.tiers[tier.key].speaking;
+  if(speakIdx < prompts.length-1){
+    speakIdx++; renderSpeak();
+  } else if(tierIdx < TIERS.length-1){
+    tierIdx++;
+    renderRoute();
+    buildMcqList();
+    showScreen('screen-mcq');
+    renderMcq();
+  } else {
+    showScreen('screen-submitting');
+    await submitAll();
+  }
+});
+
+async function submitAll(){
+  try{
+    await callFn('submit-assessment', { token, answers, written, audio: audioBase64 });
+    if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); }
+    renderRoute(); // shows all done
+    showScreen('screen-done');
+  } catch(e){
+    $('submit-error-msg').textContent = e.message || 'Check your connection and try again.';
+    showScreen('screen-submit-error');
+  }
+}
+$('btn-retry-submit').addEventListener('click', async ()=>{
+  showScreen('screen-submitting');
+  await submitAll();
+});
+
+init();
+</script>
+</body>
+</html>
