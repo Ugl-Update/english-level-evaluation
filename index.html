@@ -3,91 +3,99 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dispatch Floor — English Proficiency Check</title>
+<title>English Proficiency Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#1C1B19; --panel:#252320; --panel-line:#3A3631;
-    --amber:#F2A71B; --rust:#C8502E; --steel:#5C7A89;
-    --cream:#F4F1EA; --cream-dim:#B8B3A8; --green:#5C9D6B; --red:#D6553F;
+    --paper:#ECE9E1; --card:#F7F5EF; --ink:#20242B; --ink-soft:#5B6168;
+    --line:#C7C2B3; --accent:#2F4858; --flag:#8C3B2E; --stamp:#3B6B44;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{ background:var(--bg); color:var(--cream); font-family:'Inter',sans-serif;
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px; }
-  .wrap{width:100%; max-width:680px;}
-  .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
-    color:var(--amber); text-transform:uppercase; margin-bottom:6px; }
-  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:clamp(24px,5vw,32px);
-    text-transform:uppercase; line-height:1.1; margin-bottom:24px;
-    border-bottom:3px solid var(--amber); padding-bottom:16px; }
-  .route{ position:relative; display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; padding:0 60px; }
-  .route::before{ content:""; position:absolute; top:50%; left:74px; right:74px; height:3px;
-    background:repeating-linear-gradient(to right, var(--panel-line) 0 10px, transparent 10px 18px); transform:translateY(-50%); z-index:0; }
-  .checkpoint{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
-  .checkpoint .dot{ width:14px; height:14px; border-radius:50%; background:var(--panel); border:2px solid var(--panel-line); transition:all .3s; }
-  .checkpoint.done .dot{ background:var(--green); border-color:var(--green); }
-  .checkpoint.active .dot{ background:var(--amber); border-color:var(--amber); box-shadow:0 0 0 4px rgba(242,167,27,0.2); }
-  .checkpoint .label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.08em; color:var(--cream-dim); text-transform:uppercase; }
-  .checkpoint.active .label{ color:var(--amber); }
-  .checkpoint.done .label{ color:var(--green); }
-  .screen{ display:none; } .screen.show{ display:block; animation:fade .25s ease; }
-  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
-  .card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:4px; padding:28px; }
-  .tag{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em;
-    color:var(--bg); background:var(--amber); padding:3px 9px; border-radius:2px; text-transform:uppercase; margin-bottom:14px; }
-  .qcount{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cream-dim); margin-bottom:10px; }
-  .qtext{ font-size:18px; font-weight:500; line-height:1.4; margin-bottom:20px; }
-  .options{ display:flex; flex-direction:column; gap:10px; }
-  .opt{ text-align:left; background:var(--bg); border:1px solid var(--panel-line); color:var(--cream);
-    padding:13px 16px; border-radius:3px; font-size:15px; cursor:pointer; font-family:'Inter',sans-serif; transition:border-color .15s, background .15s; }
-  .opt:hover{ border-color:var(--steel); }
-  .opt.selected{ border-color:var(--amber); background:rgba(242,167,27,0.08); }
-  .nav{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
-  button.primary{ background:var(--amber); color:var(--bg); border:none; font-family:'Oswald',sans-serif; font-weight:600;
-    letter-spacing:0.04em; text-transform:uppercase; font-size:14px; padding:13px 26px; border-radius:3px; cursor:pointer; }
-  button.primary:disabled{ background:var(--panel-line); color:var(--cream-dim); cursor:not-allowed; }
-  button.primary:hover:not(:disabled){ background:#ffba3d; }
-  .prompt-box{ background:var(--bg); border-left:3px solid var(--amber); padding:16px 18px; margin-bottom:18px; font-size:16px; line-height:1.5; }
-  textarea{ width:100%; min-height:160px; background:var(--bg); border:1px solid var(--panel-line); color:var(--cream);
-    padding:14px; font-size:15px; border-radius:3px; font-family:'Inter',sans-serif; resize:vertical; }
-  textarea:focus{ outline:2px solid var(--amber); border-color:var(--amber); }
-  .rec-row{ display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
-  .rec-btn{ background:var(--rust); color:var(--cream); border:none; font-family:'JetBrains Mono',monospace; font-size:13px;
-    letter-spacing:0.05em; padding:10px 18px; border-radius:3px; cursor:pointer; }
-  .rec-btn.recording{ background:var(--red); animation:pulse 1s infinite; }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.6;} }
-  .rec-status{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cream-dim); }
-  audio{ width:100%; margin-top:6px; }
-  .center-msg{ text-align:center; padding:60px 20px; }
-  .center-msg h2{ font-family:'Oswald',sans-serif; text-transform:uppercase; margin-bottom:10px; }
-  .center-msg p{ color:var(--cream-dim); }
-  .spinner{ width:28px; height:28px; border:3px solid var(--panel-line); border-top-color:var(--amber); border-radius:50%;
+  body{ background:var(--paper); color:var(--ink); font-family:'Public Sans',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:32px 16px 70px; line-height:1.5; }
+  .wrap{ width:100%; max-width:660px; }
+
+  .formhead{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink);
+    padding-bottom:14px; margin-bottom:6px; }
+  .formhead .rec{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--ink-soft); text-transform:uppercase; }
+  .formhead .status{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--accent); text-transform:uppercase; }
+  h1{ font-family:'Source Serif 4',serif; font-weight:600; font-size:28px; margin:14px 0 26px; color:var(--ink); }
+
+  .sections{ border:1px solid var(--line); margin-bottom:28px; background:var(--card); }
+  .sec-row{ display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid var(--line); font-size:13px; }
+  .sec-row:last-child{ border-bottom:none; }
+  .sec-num{ font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); width:22px; }
+  .sec-name{ font-family:'Public Sans',sans-serif; font-weight:600; flex:1; letter-spacing:0.01em; }
+  .sec-mark{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; }
+  .sec-row[data-state="pending"] .sec-mark{ color:var(--ink-soft); }
+  .sec-row[data-state="active"]{ background:rgba(47,72,88,0.06); }
+  .sec-row[data-state="active"] .sec-mark{ color:var(--accent); font-weight:600; }
+  .sec-row[data-state="done"] .sec-mark{ color:var(--stamp); font-weight:600; }
+
+  .screen{ display:none; } .screen.show{ display:block; }
+  .card{ background:var(--card); border:1px solid var(--line); padding:30px; }
+  .tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.07em; color:var(--accent);
+    text-transform:uppercase; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:20px; display:block; }
+  .qcount{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+  .qtext{ font-family:'Source Serif 4',serif; font-size:19px; font-weight:600; line-height:1.4; margin-bottom:22px; }
+  .options{ display:flex; flex-direction:column; gap:0; border:1px solid var(--line); }
+  .opt{ text-align:left; background:var(--card); border:none; border-bottom:1px solid var(--line); color:var(--ink);
+    padding:14px 16px; font-size:15px; cursor:pointer; font-family:'Public Sans',sans-serif; border-left:3px solid transparent; }
+  .opt:last-child{ border-bottom:none; }
+  .opt:hover{ background:rgba(47,72,88,0.05); }
+  .opt.selected{ border-left-color:var(--accent); background:rgba(47,72,88,0.08); font-weight:600; }
+  .nav{ display:flex; justify-content:flex-end; gap:10px; margin-top:26px; }
+  button.primary{ background:var(--ink); color:var(--paper); border:none; font-family:'Public Sans',sans-serif; font-weight:600;
+    letter-spacing:0.02em; font-size:14px; padding:13px 26px; cursor:pointer; border-radius:1px; }
+  button.primary:disabled{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
+  button.primary:hover:not(:disabled){ background:var(--accent); }
+  .prompt-box{ background:transparent; border:1px solid var(--line); border-left:3px solid var(--accent); padding:16px 18px;
+    margin-bottom:20px; font-family:'Source Serif 4',serif; font-size:17px; line-height:1.55; }
+  textarea{ width:100%; min-height:160px; background:var(--paper); border:1px solid var(--line); color:var(--ink);
+    padding:14px; font-size:15px; font-family:'Public Sans',sans-serif; resize:vertical; border-radius:1px; }
+  textarea:focus{ outline:none; border-color:var(--accent); }
+  .rec-row{ display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
+  .rec-btn{ background:var(--paper); color:var(--flag); border:1px solid var(--flag); font-family:'IBM Plex Mono',monospace;
+    font-size:13px; letter-spacing:0.04em; padding:10px 18px; cursor:pointer; border-radius:1px; }
+  .rec-btn.recording{ background:var(--flag); color:var(--paper); }
+  .rec-status{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); }
+  audio{ width:100%; margin-top:8px; }
+  .center-msg{ text-align:center; padding:50px 20px; }
+  .center-msg h2{ font-family:'Source Serif 4',serif; font-size:22px; margin-bottom:10px; }
+  .center-msg p{ color:var(--ink-soft); }
+  .stamp{ display:inline-block; border:3px solid var(--stamp); color:var(--stamp); font-family:'IBM Plex Mono',monospace;
+    font-weight:700; font-size:18px; letter-spacing:0.12em; padding:10px 22px; transform:rotate(-4deg); margin-bottom:18px; }
+  .spinner{ width:22px; height:22px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%;
     animation:spin 0.8s linear infinite; margin:0 auto 16px; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
-  footer{ margin-top:40px; font-size:12px; color:var(--cream-dim); text-align:center; }
+  footer{ margin-top:36px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); text-align:center; letter-spacing:0.04em; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eyebrow">Dispatch Floor // Personnel Evaluation</div>
-  <h1>English Proficiency Check</h1>
-  <div class="route" id="route"></div>
+  <div class="formhead">
+    <span class="rec">Form EVAL&#8209;002 &middot; English Proficiency Record</span>
+    <span class="status" id="formstatus">In Progress</span>
+  </div>
+  <h1>English Proficiency Assessment</h1>
+
+  <div class="sections" id="sections"></div>
 
   <div class="screen show" id="screen-loading">
-    <div class="card center-msg"><div class="spinner"></div><p>Loading your test…</p></div>
+    <div class="card center-msg"><div class="spinner"></div><p>Loading record…</p></div>
   </div>
 
   <div class="screen" id="screen-error">
     <div class="card center-msg">
-      <h2 style="color:var(--red);">Can't load this test</h2>
+      <h2 style="color:var(--flag);">Unable to open this record</h2>
       <p id="error-msg">Something went wrong.</p>
     </div>
   </div>
 
   <div class="screen" id="screen-mcq">
     <div class="card">
-      <div class="tag" id="mcq-tag"></div>
+      <span class="tag" id="mcq-tag"></span>
       <div class="qcount" id="mcq-qcount"></div>
       <div class="qtext" id="mcq-qtext"></div>
       <div class="options" id="mcq-options"></div>
@@ -97,20 +105,20 @@
 
   <div class="screen" id="screen-written">
     <div class="card">
-      <div class="tag" id="written-tag"></div>
+      <span class="tag" id="written-tag"></span>
       <div class="prompt-box" id="written-prompt"></div>
-      <textarea id="written-input" placeholder="Type your response…"></textarea>
+      <textarea id="written-input" placeholder="Write your response…"></textarea>
       <div class="nav"><button class="primary" id="btn-written-next" disabled>Next</button></div>
     </div>
   </div>
 
   <div class="screen" id="screen-speak">
     <div class="card">
-      <div class="tag" id="speak-tag"></div>
+      <span class="tag" id="speak-tag"></span>
       <div class="qcount" id="speak-qcount"></div>
       <div class="prompt-box" id="speak-prompt"></div>
       <div class="rec-row">
-        <button class="rec-btn" id="btn-record">● Record</button>
+        <button class="rec-btn" id="btn-record">Record</button>
         <span class="rec-status" id="rec-status">Not recorded yet</span>
       </div>
       <audio id="speak-audio" controls style="display:none;"></audio>
@@ -119,12 +127,12 @@
   </div>
 
   <div class="screen" id="screen-submitting">
-    <div class="card center-msg"><div class="spinner"></div><p>Submitting your results…</p></div>
+    <div class="card center-msg"><div class="spinner"></div><p>Filing your record…</p></div>
   </div>
 
   <div class="screen" id="screen-submit-error">
     <div class="card center-msg">
-      <h2 style="color:var(--red);">Submission failed</h2>
+      <h2 style="color:var(--flag);">Submission failed</h2>
       <p id="submit-error-msg" style="margin-bottom:18px;">Check your connection and try again.</p>
       <button class="primary" id="btn-retry-submit">Try Again</button>
     </div>
@@ -132,21 +140,19 @@
 
   <div class="screen" id="screen-done">
     <div class="card center-msg">
-      <h2 style="color:var(--green);">Submitted</h2>
-      <p>Thanks — your responses have been recorded. You can close this page.</p>
+      <div class="stamp">SUBMITTED</div>
+      <p>Your responses have been filed. You can close this page.</p>
     </div>
   </div>
 
-  <footer>Internal use only</footer>
+  <footer>Internal record &middot; not for external distribution</footer>
 </div>
 
 <script>
-// ====== FILL THESE IN AFTER YOU CREATE YOUR SUPABASE PROJECT ======
 const CONFIG = {
   SUPABASE_URL: 'https://ymaxtkaqfspsjaunfmuq.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYXh0a2FxZnNwc2phdW5mbXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzY0NzQsImV4cCI6MjA5NzQ1MjQ3NH0.VchQxSTvkt5EczAyNQ4YuMLCaNqK1B9qKQX0waHCdAc',
 };
-// ===================================================================
 
 function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
 async function callFn(name, body){
@@ -187,29 +193,30 @@ let mediaStream=null, mediaRecorder=null, chunks=[];
 function $(id){ return document.getElementById(id); }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $(id).classList.add('show'); }
 
-function renderRoute(){
-  const route = $('route');
-  route.innerHTML = '';
+function renderSections(done){
+  const el = $('sections');
+  el.innerHTML = '';
   TIERS.forEach((t,i)=>{
-    const div = document.createElement('div');
-    let cls='checkpoint';
-    if(i<tierIdx) cls+=' done';
-    else if(i===tierIdx) cls+=' active';
-    div.className=cls;
-    div.innerHTML = `<div class="dot"></div><div class="label">${t.label}</div>`;
-    route.appendChild(div);
+    let state = 'pending', mark = '—';
+    if(done){ state='done'; mark='Complete'; }
+    else if(i<tierIdx){ state='done'; mark='Complete'; }
+    else if(i===tierIdx){ state='active'; mark='In Progress'; }
+    const row = document.createElement('div');
+    row.className='sec-row'; row.setAttribute('data-state', state);
+    row.innerHTML = `<span class="sec-num">0${i+1}</span><span class="sec-name">${t.label}</span><span class="sec-mark">${mark}</span>`;
+    el.appendChild(row);
   });
 }
 
 async function init(){
   if(!token){
-    $('error-msg').textContent = "No test link token found. Use the link your manager sent you.";
+    $('error-msg').textContent = "No record token found in this link. Use the link your manager sent you.";
     showScreen('screen-error');
     return;
   }
   try{
     testData = await callFn('get-questions', { token });
-    renderRoute();
+    renderSections();
     buildMcqList();
     showScreen('screen-mcq');
     renderMcq();
@@ -232,8 +239,8 @@ function buildMcqList(){
 function renderMcq(){
   const tier = TIERS[tierIdx];
   const q = mcqList[mcqIdx];
-  $('mcq-tag').textContent = `${tier.label} — ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
-  $('mcq-qcount').textContent = `Question ${mcqIdx+1} of ${mcqList.length}`;
+  $('mcq-tag').textContent = `${tier.label} \u2014 ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
+  $('mcq-qcount').textContent = `Item ${mcqIdx+1} of ${mcqList.length}`;
   $('mcq-qtext').textContent = q.text;
   const optsDiv = $('mcq-options');
   optsDiv.innerHTML='';
@@ -251,28 +258,22 @@ function renderMcq(){
   const existing = answers[tier.key][q.category][q.id];
   $('btn-mcq-next').disabled = existing===undefined;
   if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
-  $('btn-mcq-next').textContent = (mcqIdx===mcqList.length-1) ? 'Continue →' : 'Next';
+  $('btn-mcq-next').textContent = (mcqIdx===mcqList.length-1) ? 'Continue' : 'Next';
 }
 
 $('btn-mcq-next').addEventListener('click', ()=>{
-  if(mcqIdx < mcqList.length-1){
-    mcqIdx++; renderMcq();
-  } else {
-    renderWritten();
-    showScreen('screen-written');
-  }
+  if(mcqIdx < mcqList.length-1){ mcqIdx++; renderMcq(); }
+  else { renderWritten(); showScreen('screen-written'); }
 });
 
 function renderWritten(){
   const tier = TIERS[tierIdx];
-  $('written-tag').textContent = `${tier.label} — Written Response`;
+  $('written-tag').textContent = `${tier.label} \u2014 Written Response`;
   $('written-prompt').textContent = testData.tiers[tier.key].written;
   $('written-input').value = written[tier.key] || '';
   $('btn-written-next').disabled = !($('written-input').value.trim().length);
 }
-$('written-input').addEventListener('input', e=>{
-  $('btn-written-next').disabled = !(e.target.value.trim().length);
-});
+$('written-input').addEventListener('input', e=>{ $('btn-written-next').disabled = !(e.target.value.trim().length); });
 $('btn-written-next').addEventListener('click', ()=>{
   const tier = TIERS[tierIdx];
   written[tier.key] = $('written-input').value.trim();
@@ -284,25 +285,25 @@ $('btn-written-next').addEventListener('click', ()=>{
 function renderSpeak(){
   const tier = TIERS[tierIdx];
   const prompts = testData.tiers[tier.key].speaking;
-  $('speak-tag').textContent = `${tier.label} — Speaking`;
-  $('speak-qcount').textContent = `Prompt ${speakIdx+1} of ${prompts.length}`;
+  $('speak-tag').textContent = `${tier.label} \u2014 Speaking`;
+  $('speak-qcount').textContent = `Item ${speakIdx+1} of ${prompts.length}`;
   $('speak-prompt').textContent = prompts[speakIdx];
   const audioEl = $('speak-audio');
   const existing = audioBase64[tier.key][speakIdx];
   if(existing){
     audioEl.src = 'data:audio/webm;base64,'+existing;
     audioEl.style.display='block';
-    $('rec-status').textContent='Recorded ✓';
+    $('rec-status').textContent='Recorded';
   } else {
     audioEl.style.display='none';
     $('rec-status').textContent='Not recorded yet';
   }
   $('btn-record').classList.remove('recording');
-  $('btn-record').textContent='● Record';
+  $('btn-record').textContent='Record';
   const isLastTier = tierIdx === TIERS.length-1;
   const isLastPrompt = speakIdx === prompts.length-1;
-  $('btn-speak-next').textContent = (isLastPrompt && isLastTier) ? 'Submit Test →' :
-    (isLastPrompt) ? `Continue to ${TIERS[tierIdx+1].label} →` : 'Next';
+  $('btn-speak-next').textContent = (isLastPrompt && isLastTier) ? 'Submit Record' :
+    (isLastPrompt) ? `Continue \u2014 ${TIERS[tierIdx+1].label}` : 'Next';
 }
 
 $('btn-record').addEventListener('click', async ()=>{
@@ -321,7 +322,7 @@ $('btn-record').addEventListener('click', async ()=>{
       renderSpeak();
     };
     mediaRecorder.start();
-    btn.classList.add('recording'); btn.textContent='■ Stop';
+    btn.classList.add('recording'); btn.textContent='Stop';
     $('rec-status').textContent='Recording…';
   } catch(err){
     $('rec-status').textContent='Microphone access denied or unavailable.';
@@ -331,11 +332,10 @@ $('btn-record').addEventListener('click', async ()=>{
 $('btn-speak-next').addEventListener('click', async ()=>{
   const tier = TIERS[tierIdx];
   const prompts = testData.tiers[tier.key].speaking;
-  if(speakIdx < prompts.length-1){
-    speakIdx++; renderSpeak();
-  } else if(tierIdx < TIERS.length-1){
+  if(speakIdx < prompts.length-1){ speakIdx++; renderSpeak(); }
+  else if(tierIdx < TIERS.length-1){
     tierIdx++;
-    renderRoute();
+    renderSections();
     buildMcqList();
     showScreen('screen-mcq');
     renderMcq();
@@ -349,17 +349,15 @@ async function submitAll(){
   try{
     await callFn('submit-assessment', { token, answers, written, audio: audioBase64 });
     if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); }
-    renderRoute(); // shows all done
+    $('formstatus').textContent = 'Filed';
+    renderSections(true);
     showScreen('screen-done');
   } catch(e){
     $('submit-error-msg').textContent = e.message || 'Check your connection and try again.';
     showScreen('screen-submit-error');
   }
 }
-$('btn-retry-submit').addEventListener('click', async ()=>{
-  showScreen('screen-submitting');
-  await submitAll();
-});
+$('btn-retry-submit').addEventListener('click', async ()=>{ showScreen('screen-submitting'); await submitAll(); });
 
 init();
 </script>
