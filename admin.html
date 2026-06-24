@@ -116,7 +116,6 @@
   </div>
 
   <div class="formhead"><span class="rec">Records Office — Admin</span></div>
-  <!-- build: fd2bd11 -->
   <h1>English Proficiency Assessment</h1>
 
   <div class="card" id="login-card">
@@ -133,7 +132,7 @@
         <button class="small" id="btn-refresh-preview">Refresh</button>
       </div>
       <p style="font-size:12px; color:var(--gray); margin-bottom:14px;">Browse the full assessment — questions, audio scripts, and answer keys. No test link required.</p>
-      <div id="preview-content"><p style="color:var(--gray); font-size:13px;">Loading…</p></div>
+      <div id="preview-content"><p style="color:var(--gray); font-size:13px;">Log in to load the question bank.</p></div>
     </div>
 
     <div class="card">
@@ -178,15 +177,25 @@ const CONFIG = {
 let adminPassword = '';
 function $(id){ return document.getElementById(id); }
 function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
-async function callFn(name, body){
-  const res = await fetch(fnUrl(name), {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}` },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if(!res.ok) throw new Error(data.error || 'Request failed');
-  return data;
+async function callFn(name, body, timeoutMs = 30000){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    const res = await fetch(fnUrl(name), {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}` },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  } catch(err){
+    if(err.name === 'AbortError') throw new Error('Request timed out — check your connection and try Refresh.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 function escapeHtml(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -200,7 +209,7 @@ $('btn-login').addEventListener('click', async ()=>{
     $('main-area').classList.remove('hidden');
     refreshList();
     refreshResults();
-    loadPreview();
+    loadPreview().catch(()=>{});
   } catch(e){
     $('login-msg').textContent = e.message;
   }
@@ -330,13 +339,22 @@ function renderFullPreview(data){
 
 async function loadPreview(){
   const el = $('preview-content');
+  if(!adminPassword){
+    el.innerHTML = '<p style="color:var(--gray); font-size:13px;">Log in to load the question bank.</p>';
+    return;
+  }
   try{
-    el.innerHTML = '<p style="color:var(--gray); font-size:13px;">Loading…</p>';
-    const data = await callFn('preview-questions', { password: adminPassword });
+    el.innerHTML = '<p style="color:var(--gray); font-size:13px;">Loading preview…</p>';
+    const data = await callFn('preview-questions', { password: adminPassword }, 20000);
+    if(!data?.intermediate || !data?.listening || !data?.speaking){
+      throw new Error('Preview data was incomplete — try Refresh.');
+    }
     el.innerHTML = renderFullPreview(data);
     bindPreviewAccordions(el);
   } catch(e){
-    el.innerHTML = `<p class="msg error">${escapeHtml(e.message)}</p>`;
+    el.innerHTML = `<p class="msg error">${escapeHtml(e.message)}</p><button class="small" type="button" id="preview-retry-btn" style="margin-top:10px;">Retry</button>`;
+    const retry = $('preview-retry-btn');
+    if(retry) retry.addEventListener('click', loadPreview);
   }
 }
 $('btn-refresh-preview').addEventListener('click', loadPreview);
