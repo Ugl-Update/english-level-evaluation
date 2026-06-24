@@ -151,6 +151,7 @@
         <audio class="listen-audio" id="listen-audio" preload="auto"></audio>
       </div>
       <div class="qtext" id="listen-qtext"></div>
+      <div class="try-note hidden" id="listen-written-hint">Type your written answer below.</div>
       <div class="options" id="listen-options"></div>
       <textarea id="listen-written-input" class="hidden" placeholder="Type your answer…"></textarea>
       <div class="nav"><button class="primary" id="btn-listen-next" disabled>Next</button></div>
@@ -168,7 +169,7 @@
         <span class="rec-status" id="rec-status">Not recorded yet</span>
       </div>
       <audio id="speak-audio" controls style="display:none;"></audio>
-      <div class="nav"><button class="primary" id="btn-speak-next">Next</button></div>
+      <div class="nav"><button class="primary" id="btn-speak-next" disabled>Next</button></div>
     </div>
   </div>
 
@@ -395,14 +396,18 @@ function renderListening(){
 
   const optsDiv = $('listen-options');
   const writtenInput = $('listen-written-input');
-  const isWritten = item.type === 'written';
+  const writtenHint = $('listen-written-hint');
+  const isWritten = item.type === 'written' || !item.options?.length;
 
   if(isWritten){
     optsDiv.classList.add('hidden');
+    optsDiv.innerHTML = '';
+    writtenHint.classList.remove('hidden');
     writtenInput.classList.remove('hidden');
     writtenInput.value = written[item.id] || '';
     $('btn-listen-next').disabled = !writtenInput.value.trim().length;
   } else {
+    writtenHint.classList.add('hidden');
     optsDiv.classList.remove('hidden');
     writtenInput.classList.add('hidden');
     optsDiv.innerHTML='';
@@ -426,7 +431,8 @@ function renderListening(){
 
 $('listen-written-input').addEventListener('input', e=>{
   const item = testData.listening[listenIdx];
-  if(item.type === 'written'){
+  const isWritten = item.type === 'written' || !item.options?.length;
+  if(isWritten){
     $('btn-listen-next').disabled = !(e.target.value.trim().length);
   }
 });
@@ -442,7 +448,8 @@ $('btn-play-clip').addEventListener('click', ()=>{
 
 $('btn-listen-next').addEventListener('click', ()=>{
   const item = testData.listening[listenIdx];
-  if(item.type === 'written'){
+  const isWritten = item.type === 'written' || !item.options?.length;
+  if(isWritten){
     written[item.id] = $('listen-written-input').value.trim();
   }
   if(listenIdx < testData.listening.length - 1){
@@ -476,6 +483,7 @@ function renderSpeak(){
   $('btn-record').classList.remove('recording');
   $('btn-record').textContent='Record';
   $('btn-record').disabled = remaining <= 0;
+  $('btn-speak-next').disabled = !audioSpeaking[speakIdx];
   $('btn-speak-next').textContent = speakIdx === testData.speaking.length - 1 ? 'Submit Assessment' : 'Next';
 }
 
@@ -507,6 +515,7 @@ $('btn-record').addEventListener('click', async ()=>{
 });
 
 $('btn-speak-next').addEventListener('click', async ()=>{
+  if(!audioSpeaking[speakIdx]) return;
   if(speakIdx < testData.speaking.length - 1){
     speakIdx++; renderSpeak();
   } else {

@@ -69,6 +69,12 @@
   .written-block p{ background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; color:var(--light); white-space:pre-wrap; }
   .audio-block{ margin-top:14px; }
   .audio-block .lbl{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; color:var(--gray); display:block; margin-bottom:4px; }
+  .score-pending-review,.score-pending{ color:var(--gray); }
+  .manual-score-block{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .manual-row{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-top:10px; }
+  .manual-row label{ margin-bottom:0; font-size:12px; }
+  .manual-row select{ background:var(--bg); border:1px solid var(--line2); padding:8px 10px; font-size:13px; font-family:'Barlow',sans-serif; }
+  .manual-msg{ font-size:12px; color:var(--green); }
   a{ color:var(--red); }
 </style>
 </head>
@@ -200,9 +206,14 @@ async function refreshList(){
 }
 $('btn-refresh').addEventListener('click', refreshList);
 
+function bandClass(band){
+  if(!band) return 'pending-review';
+  return band.toLowerCase().replace(/\s+/g,'-');
+}
+
 function renderTier(label, scoreObj, missed){
-  if(!scoreObj) return '';
-  let html = `<div class="tier-line">${label}: ${scoreObj.correct}/${scoreObj.total} <span class="score-tag score-${scoreObj.band.toLowerCase()}">${scoreObj.band}</span></div>`;
+  if(!scoreObj || scoreObj.manual) return '';
+  let html = `<div class="tier-line">${label}: ${scoreObj.correct}/${scoreObj.total} <span class="score-tag score-${bandClass(scoreObj.band)}">${scoreObj.band}</span></div>`;
   if(missed && missed.length){
     html += '<ul class="missed-ul">' + missed.map(m=>
       `<li>"${escapeHtml(m.question)}" — chose: <em>${escapeHtml(m.chosenText ?? '(blank)')}</em>, correct: <em>${escapeHtml(m.correctOption)}</em></li>`
@@ -213,11 +224,62 @@ function renderTier(label, scoreObj, missed){
   return html;
 }
 
+function renderListeningHeader(r){
+  const ts = r.tier_scores?.listening;
+  if(ts?.manual) return renderManualTier('Listening', ts);
+  if(ts?.correct !== undefined) return renderTier('Listening', ts, r.missed_items?.listening);
+  return renderManualTier('Listening', ts);
+}
+
+function renderSpeakingHeader(r){
+  const ts = r.tier_scores?.speaking;
+  if(ts?.manual || ts?.band) return renderManualTier('Speaking', ts);
+  return '';
+}
+
+function renderManualTier(label, scoreObj){
+  const band = scoreObj?.band || 'Pending review';
+  return `<div class="tier-line">${label}: <span class="score-tag score-${bandClass(band)}">${escapeHtml(band)}</span> <span style="font-size:11px;color:var(--gray);">(manual review)</span></div>`;
+}
+
+function renderListeningReview(items, writtenResponses){
+  if(items && items.length){
+    return items.map(item => {
+      if(item.type === 'written'){
+        return `<div class="written-block"><strong>Listening — ${escapeHtml(item.id)} (written)</strong><p>${escapeHtml(item.response || '(no response)')}</p></div>`;
+      }
+      return `<div class="written-block"><strong>Listening — ${escapeHtml(item.id)} (MCQ)</strong><p>${escapeHtml(item.question)}</p><p>Answer: <em>${escapeHtml(item.chosenText ?? '(blank)')}</em></p><p style="font-size:11px;color:var(--gray);">Reference: ${escapeHtml(item.correctOption || '')}</p></div>`;
+    }).join('');
+  }
+  return renderListeningWritten(writtenResponses);
+}
+
 function renderListeningWritten(responses){
   const ids = ['L2','L4','L6','L8','L10'];
   return ids.map(id =>
     `<div class="written-block"><strong>Listening — ${id} (written)</strong><p>${escapeHtml(responses?.[id] || '(no response)')}</p></div>`
   ).join('');
+}
+
+const MANUAL_BANDS = ['Pending review','Strong','Adequate','Lacking'];
+
+function renderManualScoreControls(resultId, tierScores){
+  const listenBand = tierScores?.listening?.band || 'Pending review';
+  const speakBand = tierScores?.speaking?.band || 'Pending review';
+  const opts = (selected) => MANUAL_BANDS.map(b =>
+    `<option value="${b}"${b===selected?' selected':''}>${b}</option>`
+  ).join('');
+  return `
+    <div class="manual-score-block">
+      <strong style="font-size:13px;">Manual scores</strong>
+      <div class="manual-row">
+        <label>Listening<br><select id="listen-band-${resultId}">${opts(listenBand)}</select></label>
+        <label>Speaking<br><select id="speak-band-${resultId}">${opts(speakBand)}</select></label>
+        <button class="small" data-save-manual="${resultId}">Save scores</button>
+        <span class="manual-msg" id="manual-msg-${resultId}"></span>
+      </div>
+    </div>
+  `;
 }
 
 function renderSpeaking(urls){
@@ -251,21 +313,44 @@ async function refreshResults(){
       div.innerHTML = `
         <div class="result-head">
           <div><strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">${date}</span></div>
-          <span class="score-tag score-${r.overall_band.toLowerCase()}">${r.overall_score}/${r.overall_total} — ${r.overall_band}</span>
+          <span class="score-tag score-${bandClass(r.overall_band)}">${r.overall_score}/${r.overall_total} — ${r.overall_band}</span>
         </div>
         <div class="result-body hidden">
           ${renderTier('Intermediate', r.tier_scores?.intermediate, r.missed_items?.intermediate)}
           ${renderTier('Advanced', r.tier_scores?.advanced, r.missed_items?.advanced)}
-          ${renderTier('Listening (auto-graded MCQ)', r.tier_scores?.listening, r.missed_items?.listening)}
-          ${renderListeningWritten(r.written_responses)}
+          ${renderListeningHeader(r)}
+          ${renderListeningReview(r.missed_items?.listening_review, r.written_responses)}
           <div class="written-block"><strong>Written — Advanced (Short Load)</strong><p>${escapeHtml(r.written_responses?.AW_short || r.written_responses?.advanced || '(no response)')}</p></div>
           <div class="written-block"><strong>Written — Advanced (Damaged)</strong><p>${escapeHtml(r.written_responses?.AW_damaged || '(no response)')}</p></div>
-          <div class="audio-block"><strong style="font-size:13px;">Speaking</strong><div style="margin-top:8px;">${renderSpeaking(r.audio_urls)}</div></div>
+          ${renderSpeakingHeader(r)}
+          <div class="audio-block"><div style="margin-top:8px;">${renderSpeaking(r.audio_urls)}</div></div>
+          ${renderManualScoreControls(r.id, r.tier_scores)}
         </div>
       `;
       div.querySelector('.result-head').addEventListener('click', ()=>{
         div.querySelector('.result-body').classList.toggle('hidden');
       });
+      const saveBtn = div.querySelector('[data-save-manual]');
+      if(saveBtn){
+        saveBtn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          const id = saveBtn.getAttribute('data-save-manual');
+          const msg = div.querySelector(`#manual-msg-${id}`);
+          try{
+            await callFn('save-manual-scores', {
+              password: adminPassword,
+              result_id: id,
+              listening_band: div.querySelector(`#listen-band-${id}`).value,
+              speaking_band: div.querySelector(`#speak-band-${id}`).value,
+            });
+            msg.textContent = 'Saved.';
+            msg.style.color = 'var(--green)';
+          } catch(err){
+            msg.textContent = err.message;
+            msg.style.color = 'var(--red)';
+          }
+        });
+      }
       list.appendChild(div);
     });
   } catch(e){ console.error(e); }
