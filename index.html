@@ -82,7 +82,13 @@
   .spinner{ width:22px; height:22px; border:2px solid var(--line2); border-top-color:var(--red); border-radius:50%;
     animation:spin 0.8s linear infinite; margin:0 auto 16px; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
-  footer{ margin-top:32px; font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; color:var(--gray); text-align:center; letter-spacing:0.04em; }
+  .listen-tries{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); margin-bottom:10px; }
+  .try-note{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gold); margin-bottom:12px; }
+  .play-btn:disabled,.rec-btn:disabled{ background:var(--panel); color:var(--gray); border-color:var(--line2); cursor:not-allowed; }
+  #listen-written-input{ width:100%; min-height:120px; background:var(--bg); border:1px solid var(--line2); color:var(--ink);
+    padding:14px; font-size:15px; font-family:'Barlow',sans-serif; resize:vertical; border-radius:2px; margin-top:8px; }
+  #listen-written-input:focus{ outline:none; border-color:var(--red); }
+  .hidden{ display:none !important; }
 </style>
 </head>
 <body>
@@ -137,12 +143,15 @@
     <div class="card">
       <span class="tag">Listening Comprehension</span>
       <div class="qcount" id="listen-qcount"></div>
+      <div class="try-note">You may play each clip up to 2 times.</div>
       <div class="listen-row">
         <button class="play-btn" id="btn-play-clip">▶ Play Clip</button>
+        <span class="listen-tries" id="listen-tries"></span>
         <audio class="listen-audio" id="listen-audio" preload="auto"></audio>
       </div>
       <div class="qtext" id="listen-qtext"></div>
       <div class="options" id="listen-options"></div>
+      <textarea id="listen-written-input" class="hidden" placeholder="Type your answer…"></textarea>
       <div class="nav"><button class="primary" id="btn-listen-next" disabled>Next</button></div>
     </div>
   </div>
@@ -152,6 +161,7 @@
       <span class="tag">Speaking</span>
       <div class="qcount" id="speak-qcount"></div>
       <div class="prompt-box" id="speak-prompt"></div>
+      <div class="try-note" id="speak-try-note">You may record up to 2 times per prompt.</div>
       <div class="rec-row">
         <button class="rec-btn" id="btn-record">Record</button>
         <span class="rec-status" id="rec-status">Not recorded yet</span>
@@ -196,6 +206,9 @@ const SECTIONS = [
   { key:'speaking', label:'Speaking' },
 ];
 
+const MAX_LISTEN_PLAYS = 2;
+const MAX_RECORD_ATTEMPTS = 2;
+
 let token = new URLSearchParams(window.location.search).get('token');
 let testData = null;
 let sectionIdx = 0;
@@ -211,6 +224,8 @@ let answers = {
   listening: {},
 };
 let written = {};
+let listenPlays = {};
+let recordAttempts = [0, 0, 0, 0, 0];
 let audioSpeaking = [null, null, null, null, null];
 let mediaStream=null, mediaRecorder=null, chunks=[];
 
@@ -360,6 +375,14 @@ $('btn-written-next').addEventListener('click', ()=>{
   }
 });
 
+function updateListenTries(item){
+  const used = listenPlays[item.id] || 0;
+  const remaining = MAX_LISTEN_PLAYS - used;
+  $('listen-tries').textContent = `${remaining} of ${MAX_LISTEN_PLAYS} plays remaining`;
+  $('btn-play-clip').disabled = remaining <= 0;
+  if(remaining <= 0) $('listen-tries').textContent = 'No plays remaining';
+}
+
 function renderListening(){
   const item = testData.listening[listenIdx];
   $('listen-qcount').textContent = `Clip ${listenIdx+1} of ${testData.listening.length}`;
@@ -367,28 +390,60 @@ function renderListening(){
   const audioEl = $('listen-audio');
   audioEl.src = item.audioFile;
   audioEl.load();
+  updateListenTries(item);
+
   const optsDiv = $('listen-options');
-  optsDiv.innerHTML='';
-  item.options.forEach((opt,i)=>{
-    const b = document.createElement('button');
-    b.className='opt'; b.textContent = opt;
-    b.addEventListener('click', ()=>{
-      document.querySelectorAll('#listen-options .opt').forEach(o=>o.classList.remove('selected'));
-      b.classList.add('selected');
-      answers.listening[item.id] = i;
-      $('btn-listen-next').disabled = false;
+  const writtenInput = $('listen-written-input');
+  const isWritten = item.type === 'written';
+
+  if(isWritten){
+    optsDiv.classList.add('hidden');
+    writtenInput.classList.remove('hidden');
+    writtenInput.value = written[item.id] || '';
+    $('btn-listen-next').disabled = !writtenInput.value.trim().length;
+  } else {
+    optsDiv.classList.remove('hidden');
+    writtenInput.classList.add('hidden');
+    optsDiv.innerHTML='';
+    item.options.forEach((opt,i)=>{
+      const b = document.createElement('button');
+      b.className='opt'; b.textContent = opt;
+      b.addEventListener('click', ()=>{
+        document.querySelectorAll('#listen-options .opt').forEach(o=>o.classList.remove('selected'));
+        b.classList.add('selected');
+        answers.listening[item.id] = i;
+        $('btn-listen-next').disabled = false;
+      });
+      optsDiv.appendChild(b);
     });
-    optsDiv.appendChild(b);
-  });
-  const existing = answers.listening[item.id];
-  $('btn-listen-next').disabled = existing===undefined;
-  if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
+    const existing = answers.listening[item.id];
+    $('btn-listen-next').disabled = existing===undefined;
+    if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
+  }
   $('btn-listen-next').textContent = listenIdx === testData.listening.length - 1 ? 'Continue to Speaking' : 'Next';
 }
 
-$('btn-play-clip').addEventListener('click', ()=>{ $('listen-audio').play(); });
+$('listen-written-input').addEventListener('input', e=>{
+  const item = testData.listening[listenIdx];
+  if(item.type === 'written'){
+    $('btn-listen-next').disabled = !(e.target.value.trim().length);
+  }
+});
+
+$('btn-play-clip').addEventListener('click', ()=>{
+  const item = testData.listening[listenIdx];
+  const used = listenPlays[item.id] || 0;
+  if(used >= MAX_LISTEN_PLAYS) return;
+  listenPlays[item.id] = used + 1;
+  updateListenTries(item);
+  $('listen-audio').play();
+});
 
 $('btn-listen-next').addEventListener('click', ()=>{
+  const item = testData.listening[listenIdx];
+  if(item.type === 'written'){
+    written[item.id] = $('listen-written-input').value.trim();
+  }
   if(listenIdx < testData.listening.length - 1){
     listenIdx++; renderListening();
   } else {
@@ -402,7 +457,10 @@ $('btn-listen-next').addEventListener('click', ()=>{
 
 function renderSpeak(){
   const item = testData.speaking[speakIdx];
+  const attempts = recordAttempts[speakIdx] || 0;
+  const remaining = MAX_RECORD_ATTEMPTS - attempts;
   $('speak-qcount').textContent = `${item.id} — Item ${speakIdx+1} of ${testData.speaking.length}`;
+  $('speak-try-note').textContent = `You may record up to ${MAX_RECORD_ATTEMPTS} times per prompt — ${remaining} attempt${remaining===1?'':'s'} remaining.`;
   $('speak-prompt').textContent = item.prompt;
   const audioEl = $('speak-audio');
   const existing = audioSpeaking[speakIdx];
@@ -416,12 +474,18 @@ function renderSpeak(){
   }
   $('btn-record').classList.remove('recording');
   $('btn-record').textContent='Record';
+  $('btn-record').disabled = remaining <= 0;
   $('btn-speak-next').textContent = speakIdx === testData.speaking.length - 1 ? 'Submit Assessment' : 'Next';
 }
 
 $('btn-record').addEventListener('click', async ()=>{
   const btn = $('btn-record');
   if(btn.classList.contains('recording')){ mediaRecorder.stop(); return; }
+  const attempts = recordAttempts[speakIdx] || 0;
+  if(attempts >= MAX_RECORD_ATTEMPTS){
+    $('rec-status').textContent='No recording attempts remaining.';
+    return;
+  }
   try{
     if(!mediaStream) mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
     chunks=[];
@@ -430,6 +494,7 @@ $('btn-record').addEventListener('click', async ()=>{
     mediaRecorder.onstop = async ()=>{
       const blob = new Blob(chunks, {type:'audio/webm'});
       audioSpeaking[speakIdx] = await blobToBase64(blob);
+      recordAttempts[speakIdx] = (recordAttempts[speakIdx] || 0) + 1;
       renderSpeak();
     };
     mediaRecorder.start();

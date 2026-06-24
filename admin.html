@@ -213,7 +213,12 @@ function renderTier(label, scoreObj, missed){
   return html;
 }
 
-function renderSpeaking(urls){
+function renderListeningWritten(responses){
+  const ids = ['L2','L4','L6','L8','L10'];
+  return ids.map(id =>
+    `<div class="written-block"><strong>Listening — ${id} (written)</strong><p>${escapeHtml(responses?.[id] || '(no response)')}</p></div>`
+  ).join('');
+}
   const entries = Object.entries(urls || {}).sort((a,b)=>{
     const na = parseInt(a[0].replace('speaking_',''), 10);
     const nb = parseInt(b[0].replace('speaking_',''), 10);
@@ -249,7 +254,8 @@ async function refreshResults(){
         <div class="result-body hidden">
           ${renderTier('Intermediate', r.tier_scores?.intermediate, r.missed_items?.intermediate)}
           ${renderTier('Advanced', r.tier_scores?.advanced, r.missed_items?.advanced)}
-          ${renderTier('Listening', r.tier_scores?.listening, r.missed_items?.listening)}
+          ${renderTier('Listening (auto-graded MCQ)', r.tier_scores?.listening, r.missed_items?.listening)}
+          ${renderListeningWritten(r.written_responses)}
           <div class="written-block"><strong>Written — Advanced (Short Load)</strong><p>${escapeHtml(r.written_responses?.AW_short || r.written_responses?.advanced || '(no response)')}</p></div>
           <div class="written-block"><strong>Written — Advanced (Damaged)</strong><p>${escapeHtml(r.written_responses?.AW_damaged || '(no response)')}</p></div>
           <div class="audio-block"><strong style="font-size:13px;">Speaking</strong><div style="margin-top:8px;">${renderSpeaking(r.audio_urls)}</div></div>
