@@ -85,6 +85,23 @@
   .review-item p{ font-size:13px; color:var(--light); white-space:pre-wrap; margin-top:6px; }
   .section-total{ font-size:13px; color:var(--light); font-weight:400; margin-left:8px; }
   .result-summary{ font-size:11px; color:var(--gray); margin-top:2px; }
+  .preview-block{ border:1px solid var(--line2); margin-bottom:8px; background:var(--card); }
+  .preview-head{ padding:12px 14px; cursor:pointer; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:14px; display:flex; justify-content:space-between; align-items:center; }
+  .preview-head:hover{ background:var(--card2); }
+  .preview-count{ font-size:11px; color:var(--gray); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; }
+  .preview-body{ padding:14px; border-top:1px solid var(--line); background:var(--bg); }
+  .preview-sub{ font-size:11px; color:var(--gray); text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin:14px 0 8px; font-family:'Barlow Semi Condensed',sans-serif; }
+  .preview-sub:first-child{ margin-top:0; }
+  .preview-q{ margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .preview-q:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+  .preview-id{ font-size:10px; color:var(--gray); font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+  .preview-q p{ font-size:13px; margin:6px 0 8px; color:var(--ink); }
+  .preview-opts{ list-style:none; font-size:12px; color:var(--light); }
+  .preview-opts li{ padding:6px 10px; margin-bottom:4px; border:1px solid var(--line); background:var(--card); }
+  .preview-opts li.preview-correct{ border-color:var(--green); color:var(--green); font-weight:600; }
+  .preview-script{ font-size:12px; color:var(--light); font-style:italic; background:var(--card); border:1px solid var(--line2); padding:10px; margin:8px 0; }
+  .preview-written{ font-size:13px; color:var(--light); background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; }
+  .preview-audio{ width:100%; margin:8px 0; }
   a{ color:var(--red); }
 </style>
 </head>
@@ -109,6 +126,15 @@
   </div>
 
   <div id="main-area" class="hidden">
+    <div class="card" id="preview-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <span class="section-label">Test Preview</span>
+        <button class="small" id="btn-refresh-preview">Refresh</button>
+      </div>
+      <p style="font-size:12px; color:var(--gray); margin-bottom:14px;">Browse the full assessment — questions, audio scripts, and answer keys. No test link required.</p>
+      <div id="preview-content"><p style="color:var(--gray); font-size:13px;">Loading…</p></div>
+    </div>
+
     <div class="card">
       <label for="emp-name">Employee name</label>
       <input type="text" id="emp-name" placeholder="e.g. J. Alvarez">
@@ -173,6 +199,7 @@ $('btn-login').addEventListener('click', async ()=>{
     $('main-area').classList.remove('hidden');
     refreshList();
     refreshResults();
+    loadPreview();
   } catch(e){
     $('login-msg').textContent = e.message;
   }
@@ -215,6 +242,103 @@ async function refreshList(){
   } catch(e){ console.error(e); }
 }
 $('btn-refresh').addEventListener('click', refreshList);
+
+function assetUrl(path){
+  return `${CONFIG.TEST_PAGE_URL}${String(path).replace(/^\//,'')}`;
+}
+
+function renderMcqQuestion(q){
+  const opts = (q.options || []).map((opt, i) =>
+    `<li class="${i === q.correct ? 'preview-correct' : ''}">${escapeHtml(opt)}${i === q.correct ? ' ✓ correct' : ''}</li>`
+  ).join('');
+  return `<div class="preview-q"><span class="preview-id">${escapeHtml(q.id)}</span><p>${escapeHtml(q.text)}</p><ul class="preview-opts">${opts}</ul></div>`;
+}
+
+function renderMcqTier(tier, data){
+  const vocab = (data.vocab || []).map(renderMcqQuestion).join('');
+  const grammar = (data.grammar || []).map(renderMcqQuestion).join('');
+  return `<div class="preview-sub">Vocabulary</div>${vocab}<div class="preview-sub">Grammar</div>${grammar}`;
+}
+
+function renderListeningPreview(items){
+  return items.map(item => {
+    const audio = item.audioFile ? `<audio class="preview-audio" controls preload="none" src="${assetUrl(item.audioFile)}"></audio>` : '';
+    const script = item.script ? `<div class="preview-script">"${escapeHtml(item.script)}"</div>` : '';
+    if(item.type === 'written'){
+      return `<div class="preview-q">
+        <span class="preview-id">${escapeHtml(item.id)} — written response</span>
+        ${audio}${script}
+        <p>${escapeHtml(item.question)}</p>
+        <p style="font-size:11px;color:var(--gray);">Scored manually 0–5</p>
+      </div>`;
+    }
+    const opts = (item.options || []).map((opt, i) =>
+      `<li class="${i === item.correct ? 'preview-correct' : ''}">${escapeHtml(opt)}${i === item.correct ? ' ✓ correct' : ''}</li>`
+    ).join('');
+    return `<div class="preview-q">
+      <span class="preview-id">${escapeHtml(item.id)} — multiple choice</span>
+      ${audio}${script}
+      <p>${escapeHtml(item.question)}</p>
+      <ul class="preview-opts">${opts}</ul>
+    </div>`;
+  }).join('');
+}
+
+function renderWrittenPreview(items){
+  return items.map(w => `<div class="preview-q">
+    <span class="preview-id">${escapeHtml(w.id)}</span>
+    <div class="preview-written">${escapeHtml(w.prompt)}</div>
+    <p style="font-size:11px;color:var(--gray);margin-top:6px;">Scored manually 0–5</p>
+  </div>`).join('');
+}
+
+function renderSpeakingPreview(items){
+  return items.map(s => `<div class="preview-q">
+    <span class="preview-id">${escapeHtml(s.id)} — voice recording</span>
+    <div class="preview-written">${escapeHtml(s.prompt)}</div>
+    <p style="font-size:11px;color:var(--gray);margin-top:6px;">Candidate records answer · scored manually 0–5</p>
+  </div>`).join('');
+}
+
+function previewSection(title, count, innerHtml, open){
+  return `<div class="preview-block">
+    <div class="preview-head">${escapeHtml(title)}<span class="preview-count">${count}</span></div>
+    <div class="preview-body${open ? '' : ' hidden'}">${innerHtml}</div>
+  </div>`;
+}
+
+function bindPreviewAccordions(root){
+  root.querySelectorAll('.preview-block').forEach(block => {
+    block.querySelector('.preview-head').addEventListener('click', () => {
+      block.querySelector('.preview-body').classList.toggle('hidden');
+    });
+  });
+}
+
+function renderFullPreview(data){
+  const intCount = (data.intermediate?.vocab?.length || 0) + (data.intermediate?.grammar?.length || 0);
+  const advCount = (data.advanced?.vocab?.length || 0) + (data.advanced?.grammar?.length || 0);
+  return [
+    previewSection('01 — Intermediate', `${intCount} MCQ`, renderMcqTier('intermediate', data.intermediate), true),
+    previewSection('02 — Advanced MCQ', `${advCount} MCQ`, renderMcqTier('advanced', data.advanced), false),
+    previewSection('02 — Advanced Written', `${(data.advanced?.written || []).length} prompts`, renderWrittenPreview(data.advanced?.written || []), false),
+    previewSection('03 — Listening', `${(data.listening || []).length} clips`, renderListeningPreview(data.listening || []), false),
+    previewSection('04 — Speaking', `${(data.speaking || []).length} prompts`, renderSpeakingPreview(data.speaking || []), false),
+  ].join('');
+}
+
+async function loadPreview(){
+  const el = $('preview-content');
+  try{
+    el.innerHTML = '<p style="color:var(--gray); font-size:13px;">Loading…</p>';
+    const data = await callFn('preview-questions', { password: adminPassword });
+    el.innerHTML = renderFullPreview(data);
+    bindPreviewAccordions(el);
+  } catch(e){
+    el.innerHTML = `<p class="msg error">${escapeHtml(e.message)}</p>`;
+  }
+}
+$('btn-refresh-preview').addEventListener('click', loadPreview);
 
 function bandClass(band){
   if(!band) return 'pending-review';
