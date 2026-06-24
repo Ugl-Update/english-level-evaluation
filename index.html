@@ -125,10 +125,11 @@
 
   <div class="screen" id="screen-written">
     <div class="card">
-      <span class="tag">Advanced — Written Response</span>
+      <span class="tag" id="written-tag">Advanced — Written Response</span>
+      <div class="qcount" id="written-qcount"></div>
       <div class="prompt-box" id="written-prompt"></div>
       <textarea id="written-input" placeholder="Write your response…"></textarea>
-      <div class="nav"><button class="primary" id="btn-written-next" disabled>Continue to Listening</button></div>
+      <div class="nav"><button class="primary" id="btn-written-next" disabled>Next</button></div>
     </div>
   </div>
 
@@ -203,12 +204,13 @@ let mcqList = [];
 let mcqIdx = 0;
 let listenIdx = 0;
 let speakIdx = 0;
+let writtenIdx = 0;
 let answers = {
   intermediate: { vocab:{}, grammar:{} },
   advanced: { vocab:{}, grammar:{} },
   listening: {},
 };
-let written = { advanced:'' };
+let written = {};
 let audioSpeaking = [null, null, null, null, null];
 let mediaStream=null, mediaRecorder=null, chunks=[];
 
@@ -323,23 +325,39 @@ $('btn-mcq-next').addEventListener('click', ()=>{
   } else {
     sectionIdx = 1;
     renderSections();
-    $('written-prompt').textContent = testData.tiers.advanced.written;
-    $('written-input').value = written.advanced || '';
-    $('btn-written-next').disabled = !written.advanced.trim();
+    writtenIdx = 0;
+    renderWritten();
     showScreen('screen-written');
   }
 });
+
+function renderWritten(){
+  const prompts = testData.tiers.advanced.written;
+  const item = prompts[writtenIdx];
+  $('written-qcount').textContent = `Response ${writtenIdx + 1} of ${prompts.length}`;
+  $('written-prompt').textContent = item.prompt;
+  $('written-input').value = written[item.id] || '';
+  $('btn-written-next').disabled = !($('written-input').value.trim().length);
+  $('btn-written-next').textContent = writtenIdx === prompts.length - 1 ? 'Continue to Listening' : 'Next';
+}
 
 $('written-input').addEventListener('input', e=>{
   $('btn-written-next').disabled = !(e.target.value.trim().length);
 });
 $('btn-written-next').addEventListener('click', ()=>{
-  written.advanced = $('written-input').value.trim();
-  sectionIdx = 2;
-  listenIdx = 0;
-  renderSections();
-  renderListening();
-  showScreen('screen-listening');
+  const item = testData.tiers.advanced.written[writtenIdx];
+  written[item.id] = $('written-input').value.trim();
+  const prompts = testData.tiers.advanced.written;
+  if(writtenIdx < prompts.length - 1){
+    writtenIdx++;
+    renderWritten();
+  } else {
+    sectionIdx = 2;
+    listenIdx = 0;
+    renderSections();
+    renderListening();
+    showScreen('screen-listening');
+  }
 });
 
 function renderListening(){
