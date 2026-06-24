@@ -5,90 +5,110 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>English Proficiency Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow+Semi+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#ECE9E1; --card:#F7F5EF; --ink:#20242B; --ink-soft:#5B6168;
-    --line:#C7C2B3; --accent:#2F4858; --flag:#8C3B2E; --stamp:#3B6B44;
+    --bg:#EFE7D7; --card:#FBF7EE; --card2:#F4EDDD; --panel:#E6DCC7;
+    --ink:#2B2620; --gray:#8C8270; --light:#544D41;
+    --red:#B5302B; --gold:#9C7327; --green:#3E7F5C;
+    --line:rgba(0,0,0,0.08); --line2:rgba(0,0,0,0.16);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{ background:var(--paper); color:var(--ink); font-family:'Public Sans',sans-serif;
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:32px 16px 70px; line-height:1.5; }
-  .wrap{ width:100%; max-width:660px; }
+  body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; font-weight:400;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:28px 16px 60px; line-height:1.5; }
+  .wrap{ width:100%; max-width:680px; }
 
-  .formhead{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink);
-    padding-bottom:14px; margin-bottom:6px; }
-  .formhead .rec{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--ink-soft); text-transform:uppercase; }
-  .formhead .status{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--accent); text-transform:uppercase; }
-  h1{ font-family:'Source Serif 4',serif; font-weight:600; font-size:28px; margin:14px 0 26px; color:var(--ink); }
+  .logo{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .logomark{ width:42px; height:42px; border-radius:9px; background:var(--red); color:#fff;
+    font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; letter-spacing:1px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .logo-txt .t1{ font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; color:var(--ink); letter-spacing:1px; line-height:1.1; }
+  .logo-txt .t2{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10px; color:var(--gray); letter-spacing:2.2px; text-transform:uppercase; }
 
-  .sections{ border:1px solid var(--line); margin-bottom:28px; background:var(--card); }
-  .sec-row{ display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid var(--line); font-size:13px; }
+  .formhead{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px solid var(--line2);
+    padding-bottom:12px; margin-bottom:18px; }
+  .formhead .rec{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.06em; color:var(--gray); text-transform:uppercase; }
+  .formhead .status{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; color:var(--red); text-transform:uppercase; }
+
+  .sections{ border:1px solid var(--line2); margin-bottom:24px; background:var(--card); }
+  .sec-row{ display:flex; align-items:center; gap:12px; padding:10px 14px; border-bottom:1px solid var(--line); font-size:13px; }
   .sec-row:last-child{ border-bottom:none; }
-  .sec-num{ font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); width:22px; }
-  .sec-name{ font-family:'Public Sans',sans-serif; font-weight:600; flex:1; letter-spacing:0.01em; }
-  .sec-mark{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; }
-  .sec-row[data-state="pending"] .sec-mark{ color:var(--ink-soft); }
-  .sec-row[data-state="active"]{ background:rgba(47,72,88,0.06); }
-  .sec-row[data-state="active"] .sec-mark{ color:var(--accent); font-weight:600; }
-  .sec-row[data-state="done"] .sec-mark{ color:var(--stamp); font-weight:600; }
+  .sec-num{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; color:var(--gray); width:24px; }
+  .sec-name{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; flex:1; }
+  .sec-mark{ font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; }
+  .sec-row[data-state="pending"] .sec-mark{ color:var(--gray); }
+  .sec-row[data-state="active"]{ background:var(--card2); }
+  .sec-row[data-state="active"] .sec-mark{ color:var(--red); font-weight:700; }
+  .sec-row[data-state="done"] .sec-mark{ color:var(--green); font-weight:700; }
 
   .screen{ display:none; } .screen.show{ display:block; }
-  .card{ background:var(--card); border:1px solid var(--line); padding:30px; }
-  .tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.07em; color:var(--accent);
-    text-transform:uppercase; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:20px; display:block; }
-  .qcount{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
-  .qtext{ font-family:'Source Serif 4',serif; font-size:19px; font-weight:600; line-height:1.4; margin-bottom:22px; }
-  .options{ display:flex; flex-direction:column; gap:0; border:1px solid var(--line); }
+  .card{ background:var(--card); border:1px solid var(--line2); padding:28px; }
+  .tag{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; color:var(--red);
+    text-transform:uppercase; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:18px; display:block; }
+  .qcount{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); margin-bottom:8px; }
+  .qtext{ font-family:'Barlow',sans-serif; font-weight:600; font-size:18px; line-height:1.4; margin-bottom:20px; color:var(--ink); }
+  .options{ display:flex; flex-direction:column; border:1px solid var(--line2); }
   .opt{ text-align:left; background:var(--card); border:none; border-bottom:1px solid var(--line); color:var(--ink);
-    padding:14px 16px; font-size:15px; cursor:pointer; font-family:'Public Sans',sans-serif; border-left:3px solid transparent; }
+    padding:13px 16px; font-size:15px; cursor:pointer; font-family:'Barlow',sans-serif; border-left:3px solid transparent; }
   .opt:last-child{ border-bottom:none; }
-  .opt:hover{ background:rgba(47,72,88,0.05); }
-  .opt.selected{ border-left-color:var(--accent); background:rgba(47,72,88,0.08); font-weight:600; }
-  .nav{ display:flex; justify-content:flex-end; gap:10px; margin-top:26px; }
-  button.primary{ background:var(--ink); color:var(--paper); border:none; font-family:'Public Sans',sans-serif; font-weight:600;
-    letter-spacing:0.02em; font-size:14px; padding:13px 26px; cursor:pointer; border-radius:1px; }
-  button.primary:disabled{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
-  button.primary:hover:not(:disabled){ background:var(--accent); }
-  .prompt-box{ background:transparent; border:1px solid var(--line); border-left:3px solid var(--accent); padding:16px 18px;
-    margin-bottom:20px; font-family:'Source Serif 4',serif; font-size:17px; line-height:1.55; }
-  textarea{ width:100%; min-height:160px; background:var(--paper); border:1px solid var(--line); color:var(--ink);
-    padding:14px; font-size:15px; font-family:'Public Sans',sans-serif; resize:vertical; border-radius:1px; }
-  textarea:focus{ outline:none; border-color:var(--accent); }
-  .rec-row{ display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap; }
-  .rec-btn{ background:var(--paper); color:var(--flag); border:1px solid var(--flag); font-family:'IBM Plex Mono',monospace;
-    font-size:13px; letter-spacing:0.04em; padding:10px 18px; cursor:pointer; border-radius:1px; }
-  .rec-btn.recording{ background:var(--flag); color:var(--paper); }
-  .rec-status{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); }
+  .opt:hover{ background:var(--card2); }
+  .opt.selected{ border-left-color:var(--red); background:var(--card2); font-weight:600; }
+  .nav{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+  button.primary{ background:var(--red); color:#fff; border:none; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700;
+    letter-spacing:0.03em; text-transform:uppercase; font-size:13px; padding:12px 24px; cursor:pointer; border-radius:2px; }
+  button.primary:disabled{ background:var(--panel); color:var(--gray); cursor:not-allowed; }
+  button.primary:hover:not(:disabled){ background:#9a2824; }
+  .prompt-box{ background:var(--card2); border:1px solid var(--line2); border-left:3px solid var(--gold); padding:16px 18px;
+    margin-bottom:18px; font-size:16px; line-height:1.55; color:var(--light); }
+  textarea{ width:100%; min-height:160px; background:var(--bg); border:1px solid var(--line2); color:var(--ink);
+    padding:14px; font-size:15px; font-family:'Barlow',sans-serif; resize:vertical; border-radius:2px; }
+  textarea:focus{ outline:none; border-color:var(--red); }
+  .listen-row{ margin-bottom:20px; }
+  .play-btn{ background:var(--red); color:#fff; border:none; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700;
+    font-size:13px; letter-spacing:0.04em; text-transform:uppercase; padding:10px 20px; cursor:pointer; border-radius:2px; margin-bottom:12px; }
+  .play-btn:hover{ background:#9a2824; }
+  .listen-audio{ width:100%; margin-top:8px; }
+  .rec-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .rec-btn{ background:var(--card); color:var(--red); border:1px solid var(--red); font-family:'Barlow Semi Condensed',sans-serif; font-weight:700;
+    font-size:13px; letter-spacing:0.04em; text-transform:uppercase; padding:10px 18px; cursor:pointer; border-radius:2px; }
+  .rec-btn.recording{ background:var(--red); color:#fff; }
+  .rec-status{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); }
   audio{ width:100%; margin-top:8px; }
-  .center-msg{ text-align:center; padding:50px 20px; }
-  .center-msg h2{ font-family:'Source Serif 4',serif; font-size:22px; margin-bottom:10px; }
-  .center-msg p{ color:var(--ink-soft); }
-  .stamp{ display:inline-block; border:3px solid var(--stamp); color:var(--stamp); font-family:'IBM Plex Mono',monospace;
-    font-weight:700; font-size:18px; letter-spacing:0.12em; padding:10px 22px; transform:rotate(-4deg); margin-bottom:18px; }
-  .spinner{ width:22px; height:22px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%;
+  .center-msg{ text-align:center; padding:48px 20px; }
+  .center-msg h2{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:800; font-size:22px; margin-bottom:10px; }
+  .center-msg p{ color:var(--gray); }
+  .stamp{ display:inline-block; border:3px solid var(--green); color:var(--green); font-family:'Barlow Semi Condensed',sans-serif;
+    font-weight:800; font-size:16px; letter-spacing:0.14em; padding:10px 22px; transform:rotate(-3deg); margin-bottom:18px; }
+  .spinner{ width:22px; height:22px; border:2px solid var(--line2); border-top-color:var(--red); border-radius:50%;
     animation:spin 0.8s linear infinite; margin:0 auto 16px; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
-  footer{ margin-top:36px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); text-align:center; letter-spacing:0.04em; }
+  footer{ margin-top:32px; font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; color:var(--gray); text-align:center; letter-spacing:0.04em; }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="logo">
+    <div class="logomark">UGL</div>
+    <div class="logo-txt">
+      <div class="t1">DISPATCH</div>
+      <div class="t2">English Assessment</div>
+    </div>
+  </div>
+
   <div class="formhead">
     <span class="rec">Form EVAL&#8209;002 &middot; English Proficiency Record</span>
     <span class="status" id="formstatus">In Progress</span>
   </div>
-  <h1>English Proficiency Assessment</h1>
 
   <div class="sections" id="sections"></div>
 
   <div class="screen show" id="screen-loading">
-    <div class="card center-msg"><div class="spinner"></div><p>Loading record…</p></div>
+    <div class="card center-msg"><div class="spinner"></div><p>Loading your assessment…</p></div>
   </div>
 
   <div class="screen" id="screen-error">
     <div class="card center-msg">
-      <h2 style="color:var(--flag);">Unable to open this record</h2>
+      <h2 style="color:var(--red);">Unable to open this record</h2>
       <p id="error-msg">Something went wrong.</p>
     </div>
   </div>
@@ -105,16 +125,30 @@
 
   <div class="screen" id="screen-written">
     <div class="card">
-      <span class="tag" id="written-tag"></span>
+      <span class="tag">Advanced — Written Response</span>
       <div class="prompt-box" id="written-prompt"></div>
       <textarea id="written-input" placeholder="Write your response…"></textarea>
-      <div class="nav"><button class="primary" id="btn-written-next" disabled>Next</button></div>
+      <div class="nav"><button class="primary" id="btn-written-next" disabled>Continue to Listening</button></div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-listening">
+    <div class="card">
+      <span class="tag">Listening Comprehension</span>
+      <div class="qcount" id="listen-qcount"></div>
+      <div class="listen-row">
+        <button class="play-btn" id="btn-play-clip">▶ Play Clip</button>
+        <audio class="listen-audio" id="listen-audio" preload="auto"></audio>
+      </div>
+      <div class="qtext" id="listen-qtext"></div>
+      <div class="options" id="listen-options"></div>
+      <div class="nav"><button class="primary" id="btn-listen-next" disabled>Next</button></div>
     </div>
   </div>
 
   <div class="screen" id="screen-speak">
     <div class="card">
-      <span class="tag" id="speak-tag"></span>
+      <span class="tag">Speaking</span>
       <div class="qcount" id="speak-qcount"></div>
       <div class="prompt-box" id="speak-prompt"></div>
       <div class="rec-row">
@@ -127,12 +161,12 @@
   </div>
 
   <div class="screen" id="screen-submitting">
-    <div class="card center-msg"><div class="spinner"></div><p>Filing your record…</p></div>
+    <div class="card center-msg"><div class="spinner"></div><p>Submitting your assessment…</p></div>
   </div>
 
   <div class="screen" id="screen-submit-error">
     <div class="card center-msg">
-      <h2 style="color:var(--flag);">Submission failed</h2>
+      <h2 style="color:var(--red);">Submission failed</h2>
       <p id="submit-error-msg" style="margin-bottom:18px;">Check your connection and try again.</p>
       <button class="primary" id="btn-retry-submit">Try Again</button>
     </div>
@@ -141,7 +175,7 @@
   <div class="screen" id="screen-done">
     <div class="card center-msg">
       <div class="stamp">SUBMITTED</div>
-      <p>Your responses have been filed. You can close this page.</p>
+      <p>Your responses have been recorded. You can close this page.</p>
     </div>
   </div>
 
@@ -154,6 +188,32 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYXh0a2FxZnNwc2phdW5mbXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzY0NzQsImV4cCI6MjA5NzQ1MjQ3NH0.VchQxSTvkt5EczAyNQ4YuMLCaNqK1B9qKQX0waHCdAc',
 };
 
+const SECTIONS = [
+  { key:'intermediate', label:'Intermediate' },
+  { key:'advanced', label:'Advanced' },
+  { key:'listening', label:'Listening' },
+  { key:'speaking', label:'Speaking' },
+];
+
+let token = new URLSearchParams(window.location.search).get('token');
+let testData = null;
+let sectionIdx = 0;
+let mcqTier = 'intermediate';
+let mcqList = [];
+let mcqIdx = 0;
+let listenIdx = 0;
+let speakIdx = 0;
+let answers = {
+  intermediate: { vocab:{}, grammar:{} },
+  advanced: { vocab:{}, grammar:{} },
+  listening: {},
+};
+let written = { advanced:'' };
+let audioSpeaking = [null, null, null, null, null];
+let mediaStream=null, mediaRecorder=null, chunks=[];
+
+function $(id){ return document.getElementById(id); }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $(id).classList.add('show'); }
 function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
 async function callFn(name, body){
   const res = await fetch(fnUrl(name), {
@@ -174,36 +234,17 @@ function blobToBase64(blob){
   });
 }
 
-const TIERS = [
-  {key:'intermediate', label:'Intermediate'},
-  {key:'advanced', label:'Advanced'}
-];
-
-let token = new URLSearchParams(window.location.search).get('token');
-let testData = null;
-let tierIdx = 0;
-let mcqList = [];
-let mcqIdx = 0;
-let speakIdx = 0;
-let answers = { intermediate:{vocab:{},grammar:{}}, advanced:{vocab:{},grammar:{}} };
-let written = { intermediate:'', advanced:'' };
-let audioBase64 = { intermediate:[null,null], advanced:[null,null] };
-let mediaStream=null, mediaRecorder=null, chunks=[];
-
-function $(id){ return document.getElementById(id); }
-function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $(id).classList.add('show'); }
-
 function renderSections(done){
   const el = $('sections');
   el.innerHTML = '';
-  TIERS.forEach((t,i)=>{
+  SECTIONS.forEach((s,i)=>{
     let state = 'pending', mark = '—';
     if(done){ state='done'; mark='Complete'; }
-    else if(i<tierIdx){ state='done'; mark='Complete'; }
-    else if(i===tierIdx){ state='active'; mark='In Progress'; }
+    else if(i < sectionIdx){ state='done'; mark='Complete'; }
+    else if(i === sectionIdx){ state='active'; mark='In Progress'; }
     const row = document.createElement('div');
     row.className='sec-row'; row.setAttribute('data-state', state);
-    row.innerHTML = `<span class="sec-num">0${i+1}</span><span class="sec-name">${t.label}</span><span class="sec-mark">${mark}</span>`;
+    row.innerHTML = `<span class="sec-num">0${i+1}</span><span class="sec-name">${s.label}</span><span class="sec-mark">${mark}</span>`;
     el.appendChild(row);
   });
 }
@@ -216,19 +257,24 @@ async function init(){
   }
   try{
     testData = await callFn('get-questions', { token });
+    sectionIdx = 0;
+    mcqTier = 'intermediate';
     renderSections();
-    buildMcqList();
-    showScreen('screen-mcq');
-    renderMcq();
+    startMcqSection();
   } catch(e){
     $('error-msg').textContent = e.message;
     showScreen('screen-error');
   }
 }
 
+function startMcqSection(){
+  buildMcqList();
+  showScreen('screen-mcq');
+  renderMcq();
+}
+
 function buildMcqList(){
-  const tier = TIERS[tierIdx];
-  const t = testData.tiers[tier.key];
+  const t = testData.tiers[mcqTier];
   mcqList = [
     ...t.vocab.map(q=>({...q, category:'vocab'})),
     ...t.grammar.map(q=>({...q, category:'grammar'})),
@@ -237,9 +283,9 @@ function buildMcqList(){
 }
 
 function renderMcq(){
-  const tier = TIERS[tierIdx];
+  const tierLabel = mcqTier === 'intermediate' ? 'Intermediate' : 'Advanced';
   const q = mcqList[mcqIdx];
-  $('mcq-tag').textContent = `${tier.label} \u2014 ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
+  $('mcq-tag').textContent = `${tierLabel} — ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
   $('mcq-qcount').textContent = `Item ${mcqIdx+1} of ${mcqList.length}`;
   $('mcq-qtext').textContent = q.text;
   const optsDiv = $('mcq-options');
@@ -250,46 +296,98 @@ function renderMcq(){
     b.addEventListener('click', ()=>{
       document.querySelectorAll('#mcq-options .opt').forEach(o=>o.classList.remove('selected'));
       b.classList.add('selected');
-      answers[tier.key][q.category][q.id] = i;
+      answers[mcqTier][q.category][q.id] = i;
       $('btn-mcq-next').disabled = false;
     });
     optsDiv.appendChild(b);
   });
-  const existing = answers[tier.key][q.category][q.id];
+  const existing = answers[mcqTier][q.category][q.id];
   $('btn-mcq-next').disabled = existing===undefined;
   if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
-  $('btn-mcq-next').textContent = (mcqIdx===mcqList.length-1) ? 'Continue' : 'Next';
+  const isLast = mcqIdx === mcqList.length - 1;
+  $('btn-mcq-next').textContent = isLast
+    ? (mcqTier === 'intermediate' ? 'Continue to Advanced' : 'Continue to Written')
+    : 'Next';
 }
 
 $('btn-mcq-next').addEventListener('click', ()=>{
-  if(mcqIdx < mcqList.length-1){ mcqIdx++; renderMcq(); }
-  else { renderWritten(); showScreen('screen-written'); }
+  if(mcqIdx < mcqList.length - 1){
+    mcqIdx++; renderMcq();
+    return;
+  }
+  if(mcqTier === 'intermediate'){
+    sectionIdx = 1;
+    mcqTier = 'advanced';
+    renderSections();
+    startMcqSection();
+  } else {
+    sectionIdx = 1;
+    renderSections();
+    $('written-prompt').textContent = testData.tiers.advanced.written;
+    $('written-input').value = written.advanced || '';
+    $('btn-written-next').disabled = !written.advanced.trim();
+    showScreen('screen-written');
+  }
 });
 
-function renderWritten(){
-  const tier = TIERS[tierIdx];
-  $('written-tag').textContent = `${tier.label} \u2014 Written Response`;
-  $('written-prompt').textContent = testData.tiers[tier.key].written;
-  $('written-input').value = written[tier.key] || '';
-  $('btn-written-next').disabled = !($('written-input').value.trim().length);
-}
-$('written-input').addEventListener('input', e=>{ $('btn-written-next').disabled = !(e.target.value.trim().length); });
+$('written-input').addEventListener('input', e=>{
+  $('btn-written-next').disabled = !(e.target.value.trim().length);
+});
 $('btn-written-next').addEventListener('click', ()=>{
-  const tier = TIERS[tierIdx];
-  written[tier.key] = $('written-input').value.trim();
-  speakIdx = 0;
-  renderSpeak();
-  showScreen('screen-speak');
+  written.advanced = $('written-input').value.trim();
+  sectionIdx = 2;
+  listenIdx = 0;
+  renderSections();
+  renderListening();
+  showScreen('screen-listening');
+});
+
+function renderListening(){
+  const item = testData.listening[listenIdx];
+  $('listen-qcount').textContent = `Clip ${listenIdx+1} of ${testData.listening.length}`;
+  $('listen-qtext').textContent = item.question;
+  const audioEl = $('listen-audio');
+  audioEl.src = item.audioFile;
+  audioEl.load();
+  const optsDiv = $('listen-options');
+  optsDiv.innerHTML='';
+  item.options.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    b.className='opt'; b.textContent = opt;
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#listen-options .opt').forEach(o=>o.classList.remove('selected'));
+      b.classList.add('selected');
+      answers.listening[item.id] = i;
+      $('btn-listen-next').disabled = false;
+    });
+    optsDiv.appendChild(b);
+  });
+  const existing = answers.listening[item.id];
+  $('btn-listen-next').disabled = existing===undefined;
+  if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
+  $('btn-listen-next').textContent = listenIdx === testData.listening.length - 1 ? 'Continue to Speaking' : 'Next';
+}
+
+$('btn-play-clip').addEventListener('click', ()=>{ $('listen-audio').play(); });
+
+$('btn-listen-next').addEventListener('click', ()=>{
+  if(listenIdx < testData.listening.length - 1){
+    listenIdx++; renderListening();
+  } else {
+    sectionIdx = 3;
+    speakIdx = 0;
+    renderSections();
+    renderSpeak();
+    showScreen('screen-speak');
+  }
 });
 
 function renderSpeak(){
-  const tier = TIERS[tierIdx];
-  const prompts = testData.tiers[tier.key].speaking;
-  $('speak-tag').textContent = `${tier.label} \u2014 Speaking`;
-  $('speak-qcount').textContent = `Item ${speakIdx+1} of ${prompts.length}`;
-  $('speak-prompt').textContent = prompts[speakIdx];
+  const item = testData.speaking[speakIdx];
+  $('speak-qcount').textContent = `${item.id} — Item ${speakIdx+1} of ${testData.speaking.length}`;
+  $('speak-prompt').textContent = item.prompt;
   const audioEl = $('speak-audio');
-  const existing = audioBase64[tier.key][speakIdx];
+  const existing = audioSpeaking[speakIdx];
   if(existing){
     audioEl.src = 'data:audio/webm;base64,'+existing;
     audioEl.style.display='block';
@@ -300,10 +398,7 @@ function renderSpeak(){
   }
   $('btn-record').classList.remove('recording');
   $('btn-record').textContent='Record';
-  const isLastTier = tierIdx === TIERS.length-1;
-  const isLastPrompt = speakIdx === prompts.length-1;
-  $('btn-speak-next').textContent = (isLastPrompt && isLastTier) ? 'Submit Record' :
-    (isLastPrompt) ? `Continue \u2014 ${TIERS[tierIdx+1].label}` : 'Next';
+  $('btn-speak-next').textContent = speakIdx === testData.speaking.length - 1 ? 'Submit Assessment' : 'Next';
 }
 
 $('btn-record').addEventListener('click', async ()=>{
@@ -316,9 +411,7 @@ $('btn-record').addEventListener('click', async ()=>{
     mediaRecorder.ondataavailable = e=>chunks.push(e.data);
     mediaRecorder.onstop = async ()=>{
       const blob = new Blob(chunks, {type:'audio/webm'});
-      const b64 = await blobToBase64(blob);
-      const tier = TIERS[tierIdx];
-      audioBase64[tier.key][speakIdx] = b64;
+      audioSpeaking[speakIdx] = await blobToBase64(blob);
       renderSpeak();
     };
     mediaRecorder.start();
@@ -330,15 +423,8 @@ $('btn-record').addEventListener('click', async ()=>{
 });
 
 $('btn-speak-next').addEventListener('click', async ()=>{
-  const tier = TIERS[tierIdx];
-  const prompts = testData.tiers[tier.key].speaking;
-  if(speakIdx < prompts.length-1){ speakIdx++; renderSpeak(); }
-  else if(tierIdx < TIERS.length-1){
-    tierIdx++;
-    renderSections();
-    buildMcqList();
-    showScreen('screen-mcq');
-    renderMcq();
+  if(speakIdx < testData.speaking.length - 1){
+    speakIdx++; renderSpeak();
   } else {
     showScreen('screen-submitting');
     await submitAll();
@@ -347,7 +433,12 @@ $('btn-speak-next').addEventListener('click', async ()=>{
 
 async function submitAll(){
   try{
-    await callFn('submit-assessment', { token, answers, written, audio: audioBase64 });
+    await callFn('submit-assessment', {
+      token,
+      answers,
+      written,
+      audio: { speaking: audioSpeaking },
+    });
     if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); }
     $('formstatus').textContent = 'Filed';
     renderSections(true);

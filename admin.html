@@ -3,68 +3,87 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Records Office &mdash; English Proficiency Assessment</title>
+<title>Records Office — English Proficiency Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow+Semi+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#ECE9E1; --card:#F7F5EF; --ink:#20242B; --ink-soft:#5B6168;
-    --line:#C7C2B3; --accent:#2F4858; --flag:#8C3B2E; --stamp:#3B6B44;
+    --bg:#EFE7D7; --card:#FBF7EE; --card2:#F4EDDD; --panel:#E6DCC7;
+    --ink:#2B2620; --gray:#8C8270; --light:#544D41;
+    --red:#B5302B; --gold:#9C7327; --green:#3E7F5C;
+    --line:rgba(0,0,0,0.08); --line2:rgba(0,0,0,0.16);
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{ background:var(--paper); color:var(--ink); font-family:'Public Sans',sans-serif; min-height:100vh;
-    display:flex; flex-direction:column; align-items:center; padding:32px 16px 70px; line-height:1.5; }
-  .wrap{ width:100%; max-width:760px; }
-  .formhead{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink);
-    padding-bottom:14px; margin-bottom:6px; }
-  .formhead .rec{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.06em; color:var(--ink-soft); text-transform:uppercase; }
-  h1{ font-family:'Source Serif 4',serif; font-weight:600; font-size:26px; margin:14px 0 28px; }
+  body{ background:var(--bg); color:var(--ink); font-family:'Barlow',sans-serif; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:28px 16px 60px; line-height:1.5; }
+  .wrap{ width:100%; max-width:780px; }
 
-  .card{ background:var(--card); border:1px solid var(--line); padding:24px; margin-bottom:22px; }
-  .section-label{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.07em; color:var(--ink-soft); text-transform:uppercase; }
-  label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:8px; }
-  input[type=text],input[type=password]{ width:100%; background:var(--paper); border:1px solid var(--line); color:var(--ink);
-    padding:12px 14px; font-size:15px; font-family:'Public Sans',sans-serif; margin-bottom:14px; border-radius:1px; }
-  input:focus{ outline:none; border-color:var(--accent); }
-  button{ background:var(--ink); color:var(--paper); border:none; font-family:'Public Sans',sans-serif; font-weight:600;
-    font-size:14px; padding:12px 22px; cursor:pointer; border-radius:1px; }
-  button:disabled{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
-  button:hover:not(:disabled){ background:var(--accent); }
-  button.small{ padding:8px 16px; font-size:12px; }
-  .msg{ font-size:13px; margin-top:10px; font-family:'IBM Plex Mono',monospace; }
-  .msg.error{ color:var(--flag); }
-  .msg.success{ color:var(--stamp); }
-  .link-row{ display:flex; gap:10px; align-items:center; background:var(--paper); border:1px solid var(--line);
-    padding:10px 14px; margin-top:10px; font-family:'IBM Plex Mono',monospace; font-size:13px; word-break:break-all; }
+  .logo{ display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .logomark{ width:42px; height:42px; border-radius:9px; background:var(--red); color:#fff;
+    font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; letter-spacing:1px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .logo-txt .t1{ font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; color:var(--ink); letter-spacing:1px; line-height:1.1; }
+  .logo-txt .t2{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:10px; color:var(--gray); letter-spacing:2.2px; text-transform:uppercase; }
+
+  .formhead{ border-bottom:1px solid var(--line2); padding-bottom:12px; margin-bottom:18px; }
+  .formhead .rec{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:600; font-size:12px; letter-spacing:0.06em; color:var(--gray); text-transform:uppercase; }
+  h1{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:800; font-size:24px; margin:12px 0 24px; color:var(--ink); }
+
+  .card{ background:var(--card); border:1px solid var(--line2); padding:24px; margin-bottom:20px; }
+  .section-label{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; color:var(--gray); text-transform:uppercase; }
+  label{ display:block; font-size:13px; color:var(--light); margin-bottom:8px; }
+  input[type=text],input[type=password]{ width:100%; background:var(--bg); border:1px solid var(--line2); color:var(--ink);
+    padding:12px 14px; font-size:15px; font-family:'Barlow',sans-serif; margin-bottom:14px; border-radius:2px; }
+  input:focus{ outline:none; border-color:var(--red); }
+  button{ background:var(--red); color:#fff; border:none; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700;
+    font-size:13px; letter-spacing:0.03em; text-transform:uppercase; padding:12px 22px; cursor:pointer; border-radius:2px; }
+  button:disabled{ background:var(--panel); color:var(--gray); cursor:not-allowed; }
+  button:hover:not(:disabled){ background:#9a2824; }
+  button.small{ padding:8px 16px; font-size:11px; }
+  .msg{ font-size:13px; margin-top:10px; }
+  .msg.error{ color:var(--red); }
+  .msg.success{ color:var(--green); }
+  .link-row{ display:flex; gap:10px; align-items:center; background:var(--bg); border:1px solid var(--line2);
+    padding:10px 14px; margin-top:10px; font-family:'Barlow',monospace; font-size:12px; word-break:break-all; }
   .link-row span{ flex:1; }
   table{ width:100%; border-collapse:collapse; font-size:13px; }
   th,td{ text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); }
-  th{ color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; }
-  .status-tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; }
-  .status-pending{ color:var(--accent); }
-  .status-completed{ color:var(--stamp); }
+  th{ color:var(--gray); font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; font-weight:700; }
+  .status-tag{ font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; font-weight:700; }
+  .status-pending{ color:var(--gold); }
+  .status-completed{ color:var(--green); }
   .hidden{ display:none; }
-  .score-tag{ font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; padding:3px 10px; border:1px solid currentColor; }
-  .score-strong{ color:var(--stamp); }
-  .score-adequate{ color:var(--accent); }
-  .score-lacking{ color:var(--flag); }
-  .result-block{ border:1px solid var(--line); margin-bottom:10px; }
-  .result-head{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer; background:var(--card); }
-  .result-head:hover{ background:rgba(47,72,88,0.05); }
-  .result-body{ padding:18px; border-top:1px solid var(--line); background:var(--paper); }
-  .tier-line{ font-size:14px; margin:10px 0 4px; font-family:'Public Sans',sans-serif; font-weight:600; }
-  .missed-ul{ list-style:none; padding-left:0; font-size:12px; color:var(--ink-soft); margin-bottom:10px; }
-  .missed-ul li{ margin-bottom:5px; padding-left:10px; border-left:2px solid var(--flag); }
+  .score-tag{ font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; font-weight:700; padding:3px 10px; border:1px solid currentColor; text-transform:uppercase; }
+  .score-strong{ color:var(--green); }
+  .score-adequate{ color:var(--gold); }
+  .score-lacking{ color:var(--red); }
+  .result-block{ border:1px solid var(--line2); margin-bottom:10px; background:var(--card); }
+  .result-head{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; cursor:pointer; }
+  .result-head:hover{ background:var(--card2); }
+  .result-body{ padding:18px; border-top:1px solid var(--line); background:var(--bg); }
+  .tier-line{ font-size:14px; margin:12px 0 4px; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; }
+  .missed-ul{ list-style:none; padding-left:0; font-size:12px; color:var(--light); margin-bottom:10px; }
+  .missed-ul li{ margin-bottom:6px; padding-left:10px; border-left:2px solid var(--red); }
   .written-block{ margin-top:14px; font-size:13px; }
-  .written-block p{ background:var(--card); border:1px solid var(--line); padding:10px 12px; margin-top:6px; color:var(--ink-soft); white-space:pre-wrap; }
+  .written-block strong{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; }
+  .written-block p{ background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; color:var(--light); white-space:pre-wrap; }
   .audio-block{ margin-top:14px; }
-  .audio-block .lbl{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); display:block; margin-bottom:4px; }
+  .audio-block .lbl{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; color:var(--gray); display:block; margin-bottom:4px; }
+  a{ color:var(--red); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="formhead"><span class="rec">Records Office</span></div>
-  <h1>English Proficiency Assessment &mdash; Admin</h1>
+  <div class="logo">
+    <div class="logomark">UGL</div>
+    <div class="logo-txt">
+      <div class="t1">DISPATCH</div>
+      <div class="t2">English Assessment</div>
+    </div>
+  </div>
+
+  <div class="formhead"><span class="rec">Records Office — Admin</span></div>
+  <h1>English Proficiency Assessment</h1>
 
   <div class="card" id="login-card">
     <label for="pw">Admin password</label>
@@ -173,7 +192,7 @@ async function refreshList(){
       tr.innerHTML = `
         <td>${escapeHtml(emp.name)}</td>
         <td><span class="status-tag status-${emp.status}">${emp.status}</span></td>
-        <td><a href="${link}" target="_blank" style="color:var(--accent); font-family:'IBM Plex Mono',monospace; font-size:11px;">open link</a></td>
+        <td><a href="${link}" target="_blank" style="font-size:11px;">open link</a></td>
       `;
       tbody.appendChild(tr);
     });
@@ -186,19 +205,26 @@ function renderTier(label, scoreObj, missed){
   let html = `<div class="tier-line">${label}: ${scoreObj.correct}/${scoreObj.total} <span class="score-tag score-${scoreObj.band.toLowerCase()}">${scoreObj.band}</span></div>`;
   if(missed && missed.length){
     html += '<ul class="missed-ul">' + missed.map(m=>
-      `<li>"${escapeHtml(m.question)}" &mdash; chose: <em>${escapeHtml(m.chosenText)}</em>, correct: <em>${escapeHtml(m.correctOption)}</em></li>`
+      `<li>"${escapeHtml(m.question)}" — chose: <em>${escapeHtml(m.chosenText ?? '(blank)')}</em>, correct: <em>${escapeHtml(m.correctOption)}</em></li>`
     ).join('') + '</ul>';
   } else {
-    html += `<div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">No misses on this tier.</div>`;
+    html += `<div style="font-size:12px; color:var(--gray); margin-bottom:10px;">No misses in this section.</div>`;
   }
   return html;
 }
-function renderAudio(urls){
-  const entries = Object.entries(urls||{});
-  if(!entries.length) return '<div style="font-size:12px; color:var(--ink-soft);">No recordings.</div>';
-  return entries.map(([k,v])=>
-    `<div style="margin-bottom:10px;"><span class="lbl">${escapeHtml(k)}</span><audio controls src="${v}" style="width:100%;"></audio></div>`
-  ).join('');
+
+function renderSpeaking(urls){
+  const entries = Object.entries(urls || {}).sort((a,b)=>{
+    const na = parseInt(a[0].replace('speaking_',''), 10);
+    const nb = parseInt(b[0].replace('speaking_',''), 10);
+    return na - nb;
+  });
+  if(!entries.length) return '<div style="font-size:12px; color:var(--gray);">No recordings.</div>';
+  return entries.map(([k,v])=>{
+    const num = parseInt(k.replace('speaking_',''), 10);
+    const label = `S${num + 1}`;
+    return `<div style="margin-bottom:12px;"><span class="lbl">${label}</span><audio controls src="${v}" style="width:100%;"></audio></div>`;
+  }).join('');
 }
 
 async function refreshResults(){
@@ -207,7 +233,7 @@ async function refreshResults(){
     const list = $('results-list');
     list.innerHTML = '';
     if(!results.length){
-      list.innerHTML = '<p style="color:var(--ink-soft); font-size:13px;">No completed assessments yet.</p>';
+      list.innerHTML = '<p style="color:var(--gray); font-size:13px;">No completed assessments yet.</p>';
       return;
     }
     results.forEach(r=>{
@@ -217,15 +243,15 @@ async function refreshResults(){
       div.className = 'result-block';
       div.innerHTML = `
         <div class="result-head">
-          <div><strong>${escapeHtml(name)}</strong><span style="color:var(--ink-soft); font-size:12px; margin-left:10px;">${date}</span></div>
-          <span class="score-tag score-${r.overall_band.toLowerCase()}">${r.overall_score}/${r.overall_total} &mdash; ${r.overall_band}</span>
+          <div><strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">${date}</span></div>
+          <span class="score-tag score-${r.overall_band.toLowerCase()}">${r.overall_score}/${r.overall_total} — ${r.overall_band}</span>
         </div>
         <div class="result-body hidden">
           ${renderTier('Intermediate', r.tier_scores?.intermediate, r.missed_items?.intermediate)}
           ${renderTier('Advanced', r.tier_scores?.advanced, r.missed_items?.advanced)}
-          <div class="written-block"><strong>Written &mdash; Intermediate</strong><p>${escapeHtml(r.written_responses?.intermediate || '(no response)')}</p></div>
-          <div class="written-block"><strong>Written &mdash; Advanced</strong><p>${escapeHtml(r.written_responses?.advanced || '(no response)')}</p></div>
-          <div class="audio-block"><strong style="font-size:13px;">Recordings</strong><div style="margin-top:8px;">${renderAudio(r.audio_urls)}</div></div>
+          ${renderTier('Listening', r.tier_scores?.listening, r.missed_items?.listening)}
+          <div class="written-block"><strong>Written — Advanced</strong><p>${escapeHtml(r.written_responses?.advanced || '(no response)')}</p></div>
+          <div class="audio-block"><strong style="font-size:13px;">Speaking</strong><div style="margin-top:8px;">${renderSpeaking(r.audio_urls)}</div></div>
         </div>
       `;
       div.querySelector('.result-head').addEventListener('click', ()=>{
