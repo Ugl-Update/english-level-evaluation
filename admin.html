@@ -219,6 +219,8 @@ function renderListeningWritten(responses){
     `<div class="written-block"><strong>Listening — ${id} (written)</strong><p>${escapeHtml(responses?.[id] || '(no response)')}</p></div>`
   ).join('');
 }
+
+function renderSpeaking(urls){
   const entries = Object.entries(urls || {}).sort((a,b)=>{
     const na = parseInt(a[0].replace('speaking_',''), 10);
     const nb = parseInt(b[0].replace('speaking_',''), 10);
