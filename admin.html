@@ -75,6 +75,16 @@
   .manual-row label{ margin-bottom:0; font-size:12px; }
   .manual-row select{ background:var(--bg); border:1px solid var(--line2); padding:8px 10px; font-size:13px; font-family:'Barlow',sans-serif; }
   .manual-msg{ font-size:12px; color:var(--green); }
+  .review-item{ margin-top:14px; padding:12px; background:var(--card); border:1px solid var(--line2); }
+  .review-item-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; }
+  .review-item-head strong{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:13px; }
+  .score-input-wrap{ flex-shrink:0; font-size:11px; color:var(--gray); text-align:right; }
+  .score-input-wrap input{ width:52px; margin-top:4px; padding:6px 8px; background:var(--bg); border:1px solid var(--line2);
+    font-size:14px; font-family:'Barlow',sans-serif; text-align:center; }
+  .score-input-wrap input:focus{ outline:none; border-color:var(--red); }
+  .review-item p{ font-size:13px; color:var(--light); white-space:pre-wrap; margin-top:6px; }
+  .section-total{ font-size:13px; color:var(--light); font-weight:400; margin-left:8px; }
+  .result-summary{ font-size:11px; color:var(--gray); margin-top:2px; }
   a{ color:var(--red); }
 </style>
 </head>
@@ -225,64 +235,94 @@ function renderTier(label, scoreObj, missed){
 }
 
 function renderListeningHeader(r){
-  const ts = r.tier_scores?.listening;
-  if(ts?.manual) return renderManualTier('Listening', ts);
-  if(ts?.correct !== undefined) return renderTier('Listening', ts, r.missed_items?.listening);
-  return renderManualTier('Listening', ts);
+  return renderManualSectionHeader('Listening', r.tier_scores?.listening, 50, 10);
 }
 
 function renderSpeakingHeader(r){
-  const ts = r.tier_scores?.speaking;
-  if(ts?.manual || ts?.band) return renderManualTier('Speaking', ts);
+  return renderManualSectionHeader('Speaking', r.tier_scores?.speaking, 25, 5);
+}
+
+function renderWrittenAdvancedHeader(r){
+  return renderManualSectionHeader('Written — Advanced', r.tier_scores?.written_advanced, 10, 2);
+}
+
+function renderManualSectionHeader(label, scoreObj, maxDefault, itemCount){
+  const max = scoreObj?.max ?? maxDefault;
+  const total = scoreObj?.total ?? 0;
+  const scored = scoreObj?.scored ?? 0;
+  const band = scoreObj?.band || 'Pending review';
+  const totalText = scored > 0 ? `${total}/${max}` : `—/${max}`;
+  return `<div class="tier-line">${label}: <span class="section-total" data-section-total-label="${escapeHtml(label)}">${totalText}</span> <span class="score-tag score-${bandClass(band)}">${escapeHtml(band)}</span></div>`;
+}
+
+function legacyListeningHeader(r){
+  const ts = r.tier_scores?.listening;
+  if(ts?.correct !== undefined) return renderTier('Listening (legacy auto)', ts, r.missed_items?.listening);
   return '';
 }
 
-function renderManualTier(label, scoreObj){
-  const band = scoreObj?.band || 'Pending review';
-  return `<div class="tier-line">${label}: <span class="score-tag score-${bandClass(band)}">${escapeHtml(band)}</span> <span style="font-size:11px;color:var(--gray);">(manual review)</span></div>`;
+function scoreInput(resultId, section, itemId, value){
+  const v = value === undefined || value === null || value === '' ? '' : String(value);
+  return `<label class="score-input-wrap">Score 0–5<br><input type="number" class="item-score" min="0" max="5" step="1" data-section="${section}" data-item-id="${itemId}" data-result-id="${resultId}" value="${escapeHtml(v)}" placeholder="—"></label>`;
 }
 
-function renderListeningReview(items, writtenResponses){
-  if(items && items.length){
-    return items.map(item => {
-      if(item.type === 'written'){
-        return `<div class="written-block"><strong>Listening — ${escapeHtml(item.id)} (written)</strong><p>${escapeHtml(item.response || '(no response)')}</p></div>`;
-      }
-      return `<div class="written-block"><strong>Listening — ${escapeHtml(item.id)} (MCQ)</strong><p>${escapeHtml(item.question)}</p><p>Answer: <em>${escapeHtml(item.chosenText ?? '(blank)')}</em></p><p style="font-size:11px;color:var(--gray);">Reference: ${escapeHtml(item.correctOption || '')}</p></div>`;
-    }).join('');
-  }
-  return renderListeningWritten(writtenResponses);
+function clampScoreVal(v){
+  if(v === '' || v === null || v === undefined) return null;
+  const n = Math.round(Number(v));
+  if(!Number.isFinite(n)) return null;
+  return Math.min(5, Math.max(0, n));
 }
 
-function renderListeningWritten(responses){
-  const ids = ['L2','L4','L6','L8','L10'];
-  return ids.map(id =>
-    `<div class="written-block"><strong>Listening — ${id} (written)</strong><p>${escapeHtml(responses?.[id] || '(no response)')}</p></div>`
-  ).join('');
-}
-
-const MANUAL_BANDS = ['Pending review','Strong','Adequate','Lacking'];
-
-function renderManualScoreControls(resultId, tierScores){
-  const listenBand = tierScores?.listening?.band || 'Pending review';
-  const speakBand = tierScores?.speaking?.band || 'Pending review';
-  const opts = (selected) => MANUAL_BANDS.map(b =>
-    `<option value="${b}"${b===selected?' selected':''}>${b}</option>`
-  ).join('');
-  return `
-    <div class="manual-score-block">
-      <strong style="font-size:13px;">Manual scores</strong>
-      <div class="manual-row">
-        <label>Listening<br><select id="listen-band-${resultId}">${opts(listenBand)}</select></label>
-        <label>Speaking<br><select id="speak-band-${resultId}">${opts(speakBand)}</select></label>
-        <button class="small" data-save-manual="${resultId}">Save scores</button>
-        <span class="manual-msg" id="manual-msg-${resultId}"></span>
+function renderListeningReview(resultId, items, writtenResponses, tierScores){
+  const scores = tierScores?.listening?.scores || {};
+  const list = (items && items.length) ? items : buildLegacyListeningItems(writtenResponses);
+  return list.map(item => {
+    if(item.type === 'written'){
+      return `<div class="review-item">
+        <div class="review-item-head">
+          <strong>Listening — ${escapeHtml(item.id)} (written)</strong>
+          ${scoreInput(resultId, 'listening', item.id, scores[item.id])}
+        </div>
+        <p>${escapeHtml(item.response || writtenResponses?.[item.id] || '(no response)')}</p>
+      </div>`;
+    }
+    return `<div class="review-item">
+      <div class="review-item-head">
+        <strong>Listening — ${escapeHtml(item.id)} (MCQ)</strong>
+        ${scoreInput(resultId, 'listening', item.id, scores[item.id])}
       </div>
-    </div>
-  `;
+      <p>${escapeHtml(item.question)}</p>
+      <p>Answer: <em>${escapeHtml(item.chosenText ?? '(blank)')}</em></p>
+      ${item.correctOption ? `<p style="font-size:11px;color:var(--gray);">Reference: ${escapeHtml(item.correctOption)}</p>` : ''}
+    </div>`;
+  }).join('');
 }
 
-function renderSpeaking(urls){
+function buildLegacyListeningItems(writtenResponses){
+  const ids = ['L1','L2','L3','L4','L5','L6','L7','L8','L9','L10'];
+  const writtenSet = new Set(['L2','L4','L6','L8','L10']);
+  return ids.map(id => writtenSet.has(id)
+    ? { id, type:'written', response: writtenResponses?.[id] || '' }
+    : { id, type:'mcq', question: id, chosenText: '(legacy — see auto score above)' });
+}
+
+function renderWrittenAdvanced(resultId, responses, tierScores){
+  const scores = tierScores?.written_advanced?.scores || {};
+  const items = [
+    { id:'AW_short', label:'Written — Advanced (Short Load)', text: responses?.AW_short || responses?.advanced || '' },
+    { id:'AW_damaged', label:'Written — Advanced (Damaged)', text: responses?.AW_damaged || '' },
+  ];
+  return items.map(item => `<div class="review-item">
+    <div class="review-item-head">
+      <strong>${escapeHtml(item.label)}</strong>
+      ${scoreInput(resultId, 'written_advanced', item.id, scores[item.id])}
+    </div>
+    <p>${escapeHtml(item.text || '(no response)')}</p>
+  </div>`).join('');
+}
+
+function renderSpeaking(resultId, urls, tierScores){
+  const scores = tierScores?.speaking?.scores || {};
   const entries = Object.entries(urls || {}).sort((a,b)=>{
     const na = parseInt(a[0].replace('speaking_',''), 10);
     const nb = parseInt(b[0].replace('speaking_',''), 10);
@@ -291,9 +331,127 @@ function renderSpeaking(urls){
   if(!entries.length) return '<div style="font-size:12px; color:var(--gray);">No recordings.</div>';
   return entries.map(([k,v])=>{
     const num = parseInt(k.replace('speaking_',''), 10);
-    const label = `S${num + 1}`;
-    return `<div style="margin-bottom:12px;"><span class="lbl">${label}</span><audio controls src="${v}" style="width:100%;"></audio></div>`;
+    const id = `S${num + 1}`;
+    return `<div class="review-item">
+      <div class="review-item-head">
+        <strong>${id}</strong>
+        ${scoreInput(resultId, 'speaking', id, scores[id])}
+      </div>
+      <audio controls src="${v}" style="width:100%; margin-top:6px;"></audio>
+    </div>`;
   }).join('');
+}
+
+function collectManualScores(div){
+  const scores = { listening:{}, speaking:{}, written_advanced:{} };
+  div.querySelectorAll('.item-score').forEach(inp => {
+    const section = inp.dataset.section;
+    const id = inp.dataset.itemId;
+    const v = clampScoreVal(inp.value);
+    if(v !== null && scores[section]) scores[section][id] = v;
+  });
+  return scores;
+}
+
+function updateLiveSectionTotals(div, resultId){
+  const sections = {
+    listening: { max: 50, selector: 'Listening' },
+    speaking: { max: 25, selector: 'Speaking' },
+    written_advanced: { max: 10, selector: 'Written — Advanced' },
+  };
+  for(const [section, cfg] of Object.entries(sections)){
+    const inputs = div.querySelectorAll(`.item-score[data-section="${section}"]`);
+    let total = 0, scored = 0;
+    inputs.forEach(inp => {
+      const v = clampScoreVal(inp.value);
+      if(v !== null){ total += v; scored++; }
+    });
+    const max = inputs.length ? inputs.length * 5 : cfg.max;
+    const totalText = scored > 0 ? `${total}/${max}` : `—/${max}`;
+    const lines = div.querySelectorAll('.tier-line');
+    lines.forEach(line => {
+      if(line.textContent.startsWith(cfg.selector + ':')){
+        const span = line.querySelector('.section-total');
+        if(span) span.textContent = totalText;
+      }
+    });
+  }
+}
+
+function bindManualScoring(div, resultId){
+  div.querySelectorAll('.item-score').forEach(inp => {
+    inp.addEventListener('input', () => updateLiveSectionTotals(div, resultId));
+  });
+  const saveBtn = div.querySelector('[data-save-manual]');
+  if(!saveBtn) return;
+  saveBtn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const msg = div.querySelector(`#manual-msg-${resultId}`);
+    try{
+      const manual_scores = collectManualScores(div);
+      const data = await callFn('save-manual-scores', {
+        password: adminPassword,
+        result_id: resultId,
+        manual_scores,
+      });
+      msg.textContent = 'Scores saved.';
+      msg.style.color = 'var(--green)';
+      if(data.tier_scores){
+        const r = { tier_scores: data.tier_scores };
+        const head = div.closest('.result-block')?.querySelector('.result-head');
+        if(head){
+          const summary = head.querySelector('.result-summary');
+          if(summary) summary.innerHTML = renderResultSummary(r);
+        }
+        const body = div;
+        body.querySelectorAll('.tier-line').forEach((line, i) => {
+          // refresh band tags after save - re-render would be cleaner; patch bands
+        });
+        ['listening','speaking','written_advanced'].forEach(section => {
+          const ts = data.tier_scores[section];
+          if(!ts) return;
+          const labels = { listening:'Listening', speaking:'Speaking', written_advanced:'Written — Advanced' };
+          body.querySelectorAll('.tier-line').forEach(line => {
+            if(!line.textContent.startsWith(labels[section] + ':')) return;
+            const totalSpan = line.querySelector('.section-total');
+            if(totalSpan) totalSpan.textContent = ts.scored > 0 ? `${ts.total}/${ts.max}` : `—/${ts.max}`;
+            const tag = line.querySelector('.score-tag');
+            if(tag){
+              tag.textContent = ts.band;
+              tag.className = `score-tag score-${bandClass(ts.band)}`;
+            }
+          });
+        });
+      }
+    } catch(err){
+      msg.textContent = err.message;
+      msg.style.color = 'var(--red)';
+    }
+  });
+}
+
+function renderResultSummary(r){
+  const parts = [];
+  const int = r.tier_scores?.intermediate;
+  const adv = r.tier_scores?.advanced;
+  if(int?.correct !== undefined) parts.push(`MCQ Int ${int.correct}/${int.total}`);
+  if(adv?.correct !== undefined) parts.push(`MCQ Adv ${adv.correct}/${adv.total}`);
+  const ln = r.tier_scores?.listening;
+  const sp = r.tier_scores?.speaking;
+  const wr = r.tier_scores?.written_advanced;
+  if(ln) parts.push(`Listening ${ln.scored > 0 ? `${ln.total}/${ln.max}` : '—'}`);
+  if(wr) parts.push(`Written ${wr.scored > 0 ? `${wr.total}/${wr.max}` : '—'}`);
+  if(sp) parts.push(`Speaking ${sp.scored > 0 ? `${sp.total}/${sp.max}` : '—'}`);
+  return parts.join(' · ');
+}
+
+function renderManualSaveBar(resultId){
+  return `<div class="manual-score-block">
+    <div class="manual-row">
+      <button class="small" data-save-manual="${resultId}">Save all manual scores</button>
+      <span class="manual-msg" id="manual-msg-${resultId}"></span>
+    </div>
+  </div>`;
 }
 
 async function refreshResults(){
@@ -312,45 +470,29 @@ async function refreshResults(){
       div.className = 'result-block';
       div.innerHTML = `
         <div class="result-head">
-          <div><strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">${date}</span></div>
-          <span class="score-tag score-${bandClass(r.overall_band)}">${r.overall_score}/${r.overall_total} — ${r.overall_band}</span>
+          <div>
+            <strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">${date}</span>
+            <div class="result-summary">${renderResultSummary(r)}</div>
+          </div>
+          <span class="score-tag score-${bandClass(r.overall_band)}">${r.overall_score}/${r.overall_total} MCQ — ${r.overall_band}</span>
         </div>
         <div class="result-body hidden">
           ${renderTier('Intermediate', r.tier_scores?.intermediate, r.missed_items?.intermediate)}
-          ${renderTier('Advanced', r.tier_scores?.advanced, r.missed_items?.advanced)}
+          ${renderTier('Advanced MCQ', r.tier_scores?.advanced, r.missed_items?.advanced)}
+          ${legacyListeningHeader(r)}
           ${renderListeningHeader(r)}
-          ${renderListeningReview(r.missed_items?.listening_review, r.written_responses)}
-          <div class="written-block"><strong>Written — Advanced (Short Load)</strong><p>${escapeHtml(r.written_responses?.AW_short || r.written_responses?.advanced || '(no response)')}</p></div>
-          <div class="written-block"><strong>Written — Advanced (Damaged)</strong><p>${escapeHtml(r.written_responses?.AW_damaged || '(no response)')}</p></div>
+          ${renderListeningReview(r.id, r.missed_items?.listening_review, r.written_responses, r.tier_scores)}
+          ${renderWrittenAdvancedHeader(r)}
+          ${renderWrittenAdvanced(r.id, r.written_responses, r.tier_scores)}
           ${renderSpeakingHeader(r)}
-          <div class="audio-block"><div style="margin-top:8px;">${renderSpeaking(r.audio_urls)}</div></div>
-          ${renderManualScoreControls(r.id, r.tier_scores)}
+          <div class="audio-block">${renderSpeaking(r.id, r.audio_urls, r.tier_scores)}</div>
+          ${renderManualSaveBar(r.id)}
         </div>
       `;
       div.querySelector('.result-head').addEventListener('click', ()=>{
         div.querySelector('.result-body').classList.toggle('hidden');
       });
-      const saveBtn = div.querySelector('[data-save-manual]');
-      if(saveBtn){
-        saveBtn.addEventListener('click', async (e)=>{
-          e.stopPropagation();
-          const id = saveBtn.getAttribute('data-save-manual');
-          const msg = div.querySelector(`#manual-msg-${id}`);
-          try{
-            await callFn('save-manual-scores', {
-              password: adminPassword,
-              result_id: id,
-              listening_band: div.querySelector(`#listen-band-${id}`).value,
-              speaking_band: div.querySelector(`#speak-band-${id}`).value,
-            });
-            msg.textContent = 'Saved.';
-            msg.style.color = 'var(--green)';
-          } catch(err){
-            msg.textContent = err.message;
-            msg.style.color = 'var(--red)';
-          }
-        });
-      }
+      bindManualScoring(div.querySelector('.result-body'), r.id);
       list.appendChild(div);
     });
   } catch(e){ console.error(e); }
