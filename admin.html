@@ -105,7 +105,7 @@
   .preview-opts li{ padding:6px 10px; margin-bottom:4px; border:1px solid var(--line); background:var(--card); }
   .preview-opts li.preview-correct{ border-color:var(--green); color:var(--green); font-weight:600; }
   .preview-script{ font-size:12px; color:var(--light); font-style:italic; background:var(--card); border:1px solid var(--line2); padding:10px; margin:8px 0; }
-  .preview-written{ font-size:13px; color:var(--light); background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; }
+  .preview-written{ font-size:13px; color:var(--light); background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; white-space:pre-wrap; }
   .preview-audio{ width:100%; margin:8px 0; }
   a{ color:var(--red); }
   .band-legend{ font-size:11px; color:var(--gray); margin-bottom:14px; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; }
@@ -173,9 +173,9 @@
         <button class="small" id="btn-refresh-results">Refresh</button>
       </div>
       <div class="band-legend">
-        <span class="score-tag score-strong">Strong</span> high proficiency
-        <span class="score-tag score-adequate">Adequate</span> meets baseline
-        <span class="score-tag score-lacking">Lacking</span> below expectations
+        <span class="score-tag score-strong">Strong</span> ≥ 87.5%
+        <span class="score-tag score-adequate">Adequate</span> 62.5–87.5%
+        <span class="score-tag score-lacking">Lacking</span> below 62.5%
         <span class="score-tag score-pending-review">Pending review</span> not yet scored
       </div>
       <div id="results-list"></div>
