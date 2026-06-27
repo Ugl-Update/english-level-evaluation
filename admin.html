@@ -83,6 +83,11 @@
     font-size:14px; font-family:'Barlow',sans-serif; text-align:center; }
   .score-input-wrap input:focus{ outline:none; border-color:var(--red); }
   .review-item p{ font-size:13px; color:var(--light); white-space:pre-wrap; margin-top:6px; }
+  .review-item .rv-label{ display:inline-block; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:10px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gray); margin-right:6px; }
+  .review-item .rv-q{ color:var(--ink); }
+  .review-item .rv-a{ color:var(--light); }
+  .review-item .rv-correct{ color:var(--green); font-size:12px; }
+  .review-item .rv-script{ font-style:italic; color:var(--light); background:var(--card); border-left:2px solid var(--gold); padding:8px 10px; }
   .section-total{ font-size:13px; color:var(--light); font-weight:400; margin-left:8px; }
   .result-summary{ font-size:11px; color:var(--gray); margin-top:2px; }
   .preview-block{ border:1px solid var(--line2); margin-bottom:8px; background:var(--card); }
@@ -103,6 +108,11 @@
   .preview-written{ font-size:13px; color:var(--light); background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; }
   .preview-audio{ width:100%; margin:8px 0; }
   a{ color:var(--red); }
+  .band-legend{ font-size:11px; color:var(--gray); margin-bottom:14px; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; }
+  .band-legend .score-tag{ margin-right:2px; }
+  input[type=number].item-score::-webkit-inner-spin-button,
+  input[type=number].item-score::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type=number].item-score{ -moz-appearance:textfield; }
 </style>
 </head>
 <body>
@@ -152,7 +162,7 @@
         <button class="small" id="btn-refresh">Refresh</button>
       </div>
       <table id="emp-table">
-        <thead><tr><th>Name</th><th>Status</th><th>Link</th></tr></thead>
+        <thead><tr><th>Name</th><th>Status</th><th>Created</th><th>Link</th></tr></thead>
         <tbody id="emp-tbody"></tbody>
       </table>
     </div>
@@ -161,6 +171,12 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
         <span class="section-label">Results</span>
         <button class="small" id="btn-refresh-results">Refresh</button>
+      </div>
+      <div class="band-legend">
+        <span class="score-tag score-strong">Strong</span> high proficiency
+        <span class="score-tag score-adequate">Adequate</span> meets baseline
+        <span class="score-tag score-lacking">Lacking</span> below expectations
+        <span class="score-tag score-pending-review">Pending review</span> not yet scored
       </div>
       <div id="results-list"></div>
     </div>
@@ -175,6 +191,7 @@ const CONFIG = {
 };
 
 let adminPassword = '';
+let openResultIds = new Set();
 function $(id){ return document.getElementById(id); }
 function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
 async function callFn(name, body, timeoutMs = 30000){
@@ -199,9 +216,33 @@ async function callFn(name, body, timeoutMs = 30000){
 }
 function escapeHtml(s){ return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+async function runWithFeedback(btn, fn, busyLabel, doneLabel){
+  if(btn.dataset.busy === '1') return;
+  const original = btn.textContent;
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  if(busyLabel) btn.textContent = busyLabel;
+  try{
+    await fn();
+    if(doneLabel) btn.textContent = doneLabel;
+  } catch(err){
+    btn.textContent = 'Retry';
+  } finally {
+    setTimeout(()=>{
+      btn.textContent = original;
+      btn.disabled = false;
+      btn.dataset.busy = '0';
+    }, 900);
+  }
+}
+
 $('btn-login').addEventListener('click', async ()=>{
   const pw = $('pw').value;
   if(!pw) return;
+  const btn = $('btn-login');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Unlocking…';
+  $('login-msg').textContent = '';
   try{
     await callFn('list-employees', { password: pw });
     adminPassword = pw;
@@ -212,46 +253,75 @@ $('btn-login').addEventListener('click', async ()=>{
     loadPreview().catch(()=>{});
   } catch(e){
     $('login-msg').textContent = e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
   }
 });
+$('pw').addEventListener('keydown', e=>{ if(e.key === 'Enter') $('btn-login').click(); });
 
 $('btn-generate').addEventListener('click', async ()=>{
   const name = $('emp-name').value.trim();
   const msg = $('gen-msg');
   msg.className='msg'; msg.textContent='';
   if(!name){ msg.className='msg error'; msg.textContent='Enter a name first.'; return; }
+  const btn = $('btn-generate');
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Generating…';
   try{
     const { token } = await callFn('create-employee', { password: adminPassword, name });
     const link = `${CONFIG.TEST_PAGE_URL}?token=${token}`;
     $('link-row').classList.remove('hidden');
     $('link-text').textContent = link;
-    $('btn-copy').onclick = ()=>{ navigator.clipboard.writeText(link); $('btn-copy').textContent='Copied'; setTimeout(()=>$('btn-copy').textContent='Copy',1500); };
+    $('btn-copy').onclick = ()=>{ navigator.clipboard.writeText(link); $('btn-copy').textContent='Copied'; setTimeout(()=>$('btn-copy').textContent='Copy',2500); };
     msg.className='msg success'; msg.textContent=`Link generated for ${name}.`;
     $('emp-name').value='';
     refreshList();
   } catch(e){
     msg.className='msg error'; msg.textContent=e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
   }
 });
+
+function formatEmpDate(emp){
+  const raw = emp.created_at || emp.createdAt || emp.created || emp.inserted_at;
+  if(!raw) return '—';
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
+}
 
 async function refreshList(){
   try{
     const { employees } = await callFn('list-employees', { password: adminPassword });
     const tbody = $('emp-tbody');
     tbody.innerHTML='';
+    if(!employees.length){
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--gray); text-align:center; padding:18px;">No employees yet — generate a link above to add one.</td></tr>';
+      return;
+    }
     employees.forEach(emp=>{
       const link = `${CONFIG.TEST_PAGE_URL}?token=${emp.token}`;
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${escapeHtml(emp.name)}</td>
         <td><span class="status-tag status-${emp.status}">${emp.status}</span></td>
-        <td><a href="${link}" target="_blank" style="font-size:11px;">open link</a></td>
+        <td style="font-size:12px; color:var(--light);">${formatEmpDate(emp)}</td>
+        <td style="font-size:11px;"><a href="${link}" target="_blank">open</a> &middot; <a href="#" class="emp-copy" data-link="${escapeHtml(link)}">copy</a></td>
       `;
       tbody.appendChild(tr);
     });
+    tbody.querySelectorAll('.emp-copy').forEach(a=>{
+      a.addEventListener('click', e=>{
+        e.preventDefault();
+        navigator.clipboard.writeText(a.dataset.link);
+        const prev = a.textContent;
+        a.textContent = 'copied';
+        setTimeout(()=>{ a.textContent = prev; }, 2500);
+      });
+    });
   } catch(e){ console.error(e); }
 }
-$('btn-refresh').addEventListener('click', refreshList);
+$('btn-refresh').addEventListener('click', e=> runWithFeedback(e.currentTarget, refreshList, 'Refreshing…', 'Updated'));
 
 function assetUrl(path){
   return `${CONFIG.TEST_PAGE_URL}${String(path).replace(/^\//,'')}`;
@@ -337,6 +407,41 @@ function renderFullPreview(data){
   ].join('');
 }
 
+let questionBank = null;
+let questionBankPromise = null;
+
+function buildBankLookups(data){
+  const listening = {}, writtenAdv = {}, speaking = {};
+  (data.listening || []).forEach(it => { listening[it.id] = it; });
+  (data.advanced?.written || []).forEach(w => { writtenAdv[w.id] = w; });
+  (data.speaking || []).forEach(s => { speaking[s.id] = s; });
+  return {
+    listening, writtenAdv, speaking,
+    listeningArr: data.listening || [],
+    writtenAdvArr: data.advanced?.written || [],
+    speakingArr: data.speaking || [],
+  };
+}
+
+function bankLookup(){
+  return questionBank?.lookup || { listening:{}, writtenAdv:{}, speaking:{}, listeningArr:[], writtenAdvArr:[], speakingArr:[] };
+}
+
+async function ensureQuestionBank(force){
+  if(questionBank && !force) return questionBank;
+  if(questionBankPromise) return questionBankPromise;
+  questionBankPromise = callFn('preview-questions', { password: adminPassword }, 20000)
+    .then(data => {
+      if(!data?.intermediate || !data?.listening || !data?.speaking){
+        throw new Error('Preview data was incomplete — try Refresh.');
+      }
+      questionBank = { raw: data, lookup: buildBankLookups(data) };
+      return questionBank;
+    })
+    .finally(() => { questionBankPromise = null; });
+  return questionBankPromise;
+}
+
 async function loadPreview(){
   const el = $('preview-content');
   if(!adminPassword){
@@ -345,10 +450,7 @@ async function loadPreview(){
   }
   try{
     el.innerHTML = '<p style="color:var(--gray); font-size:13px;">Loading preview…</p>';
-    const data = await callFn('preview-questions', { password: adminPassword }, 20000);
-    if(!data?.intermediate || !data?.listening || !data?.speaking){
-      throw new Error('Preview data was incomplete — try Refresh.');
-    }
+    const { raw: data } = await ensureQuestionBank(true);
     el.innerHTML = renderFullPreview(data);
     bindPreviewAccordions(el);
   } catch(e){
@@ -357,7 +459,7 @@ async function loadPreview(){
     if(retry) retry.addEventListener('click', loadPreview);
   }
 }
-$('btn-refresh-preview').addEventListener('click', loadPreview);
+$('btn-refresh-preview').addEventListener('click', e=> runWithFeedback(e.currentTarget, loadPreview, 'Loading…', 'Updated'));
 
 function bandClass(band){
   if(!band) return 'pending-review';
@@ -418,25 +520,34 @@ function clampScoreVal(v){
 
 function renderListeningReview(resultId, items, writtenResponses, tierScores){
   const scores = tierScores?.listening?.scores || {};
+  const lk = bankLookup();
   const list = (items && items.length) ? items : buildLegacyListeningItems(writtenResponses);
-  return list.map(item => {
+  return list.map((item, i) => {
+    const b = lk.listening[item.id] || lk.listeningArr[i] || {};
+    const audio = b.audioFile ? `<audio class="preview-audio" controls preload="none" src="${assetUrl(b.audioFile)}"></audio>` : '';
+    const script = b.script ? `<p class="rv-script"><span class="rv-label">Transcript</span>"${escapeHtml(b.script)}"</p>` : '';
+    const question = item.question || b.question || '';
     if(item.type === 'written'){
       return `<div class="review-item">
         <div class="review-item-head">
           <strong>Listening — ${escapeHtml(item.id)} (written)</strong>
           ${scoreInput(resultId, 'listening', item.id, scores[item.id])}
         </div>
-        <p>${escapeHtml(item.response || writtenResponses?.[item.id] || '(no response)')}</p>
+        ${audio}${script}
+        ${question ? `<p class="rv-q"><span class="rv-label">Question</span>${escapeHtml(question)}</p>` : ''}
+        <p class="rv-a"><span class="rv-label">Answer</span>${escapeHtml(item.response || writtenResponses?.[item.id] || '(no response)')}</p>
       </div>`;
     }
+    const correctText = item.correctOption || (b.options && b.correct != null ? b.options[b.correct] : '');
     return `<div class="review-item">
       <div class="review-item-head">
         <strong>Listening — ${escapeHtml(item.id)} (MCQ)</strong>
         ${scoreInput(resultId, 'listening', item.id, scores[item.id])}
       </div>
-      <p>${escapeHtml(item.question)}</p>
-      <p>Answer: <em>${escapeHtml(item.chosenText ?? '(blank)')}</em></p>
-      ${item.correctOption ? `<p style="font-size:11px;color:var(--gray);">Reference: ${escapeHtml(item.correctOption)}</p>` : ''}
+      ${audio}${script}
+      ${question ? `<p class="rv-q"><span class="rv-label">Question</span>${escapeHtml(question)}</p>` : ''}
+      <p class="rv-a"><span class="rv-label">Answer</span><em>${escapeHtml(item.chosenText ?? '(blank)')}</em></p>
+      ${correctText ? `<p class="rv-correct"><span class="rv-label">Correct</span>${escapeHtml(correctText)}</p>` : ''}
     </div>`;
   }).join('');
 }
@@ -451,17 +562,22 @@ function buildLegacyListeningItems(writtenResponses){
 
 function renderWrittenAdvanced(resultId, responses, tierScores){
   const scores = tierScores?.written_advanced?.scores || {};
+  const lk = bankLookup();
   const items = [
     { id:'AW_short', label:'Written — Advanced (Short Load)', text: responses?.AW_short || responses?.advanced || '' },
     { id:'AW_damaged', label:'Written — Advanced (Damaged)', text: responses?.AW_damaged || '' },
   ];
-  return items.map(item => `<div class="review-item">
-    <div class="review-item-head">
-      <strong>${escapeHtml(item.label)}</strong>
-      ${scoreInput(resultId, 'written_advanced', item.id, scores[item.id])}
-    </div>
-    <p>${escapeHtml(item.text || '(no response)')}</p>
-  </div>`).join('');
+  return items.map((item, i) => {
+    const b = lk.writtenAdv[item.id] || lk.writtenAdvArr[i] || {};
+    return `<div class="review-item">
+      <div class="review-item-head">
+        <strong>${escapeHtml(item.label)}</strong>
+        ${scoreInput(resultId, 'written_advanced', item.id, scores[item.id])}
+      </div>
+      ${b.prompt ? `<p class="rv-q"><span class="rv-label">Prompt</span>${escapeHtml(b.prompt)}</p>` : ''}
+      <p class="rv-a"><span class="rv-label">Answer</span>${escapeHtml(item.text || '(no response)')}</p>
+    </div>`;
+  }).join('');
 }
 
 function renderSpeaking(resultId, urls, tierScores){
@@ -472,14 +588,17 @@ function renderSpeaking(resultId, urls, tierScores){
     return na - nb;
   });
   if(!entries.length) return '<div style="font-size:12px; color:var(--gray);">No recordings.</div>';
+  const lk = bankLookup();
   return entries.map(([k,v])=>{
     const num = parseInt(k.replace('speaking_',''), 10);
     const id = `S${num + 1}`;
+    const b = lk.speaking[id] || lk.speakingArr[num] || {};
     return `<div class="review-item">
       <div class="review-item-head">
         <strong>${id}</strong>
         ${scoreInput(resultId, 'speaking', id, scores[id])}
       </div>
+      ${b.prompt ? `<p class="rv-q"><span class="rv-label">Prompt</span>${escapeHtml(b.prompt)}</p>` : ''}
       <audio controls src="${v}" style="width:100%; margin-top:6px;"></audio>
     </div>`;
   }).join('');
@@ -530,6 +649,9 @@ function bindManualScoring(div, resultId){
   saveBtn.addEventListener('click', async (e)=>{
     e.stopPropagation();
     const msg = div.querySelector(`#manual-msg-${resultId}`);
+    const prevLabel = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
     try{
       const manual_scores = collectManualScores(div);
       const data = await callFn('save-manual-scores', {
@@ -569,6 +691,9 @@ function bindManualScoring(div, resultId){
     } catch(err){
       msg.textContent = err.message;
       msg.style.color = 'var(--red)';
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = prevLabel;
     }
   });
 }
@@ -599,6 +724,7 @@ function renderManualSaveBar(resultId){
 
 async function refreshResults(){
   try{
+    try { await ensureQuestionBank(); } catch(_){ /* enrichment is best-effort */ }
     const { results } = await callFn('get-results', { password: adminPassword });
     const list = $('results-list');
     list.innerHTML = '';
@@ -611,15 +737,16 @@ async function refreshResults(){
       const date = new Date(r.submitted_at).toLocaleString();
       const div = document.createElement('div');
       div.className = 'result-block';
+      const isOpen = openResultIds.has(r.id);
       div.innerHTML = `
         <div class="result-head">
           <div>
-            <strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">${date}</span>
+            <strong>${escapeHtml(name)}</strong><span style="color:var(--gray); font-size:12px; margin-left:10px;">Submitted ${date}</span>
             <div class="result-summary">${renderResultSummary(r)}</div>
           </div>
           <span class="score-tag score-${bandClass(r.overall_band)}">${r.overall_score}/${r.overall_total} MCQ — ${r.overall_band}</span>
         </div>
-        <div class="result-body hidden">
+        <div class="result-body${isOpen ? '' : ' hidden'}">
           ${renderTier('Intermediate', r.tier_scores?.intermediate, r.missed_items?.intermediate)}
           ${renderTier('Advanced MCQ', r.tier_scores?.advanced, r.missed_items?.advanced)}
           ${legacyListeningHeader(r)}
@@ -633,14 +760,17 @@ async function refreshResults(){
         </div>
       `;
       div.querySelector('.result-head').addEventListener('click', ()=>{
-        div.querySelector('.result-body').classList.toggle('hidden');
+        const body = div.querySelector('.result-body');
+        body.classList.toggle('hidden');
+        if(body.classList.contains('hidden')) openResultIds.delete(r.id);
+        else openResultIds.add(r.id);
       });
       bindManualScoring(div.querySelector('.result-body'), r.id);
       list.appendChild(div);
     });
   } catch(e){ console.error(e); }
 }
-$('btn-refresh-results').addEventListener('click', refreshResults);
+$('btn-refresh-results').addEventListener('click', e=> runWithFeedback(e.currentTarget, refreshResults, 'Refreshing…', 'Updated'));
 </script>
 </body>
 </html>

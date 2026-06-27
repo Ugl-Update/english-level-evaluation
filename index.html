@@ -88,6 +88,16 @@
   #listen-written-input{ width:100%; min-height:120px; background:var(--bg); border:1px solid var(--line2); color:var(--ink);
     padding:14px; font-size:15px; font-family:'Barlow',sans-serif; resize:vertical; border-radius:2px; margin-top:8px; }
   #listen-written-input:focus{ outline:none; border-color:var(--red); }
+  .mic-check{ border:1px solid var(--line2); background:var(--card2); padding:14px 16px; margin-bottom:18px; }
+  .mic-check-head{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gray); margin-bottom:10px; }
+  .mic-check-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .mic-select{ flex:1; min-width:160px; background:var(--bg); border:1px solid var(--line2); color:var(--ink); padding:9px 10px; font-size:14px; font-family:'Barlow',sans-serif; border-radius:2px; }
+  .mic-meter{ height:10px; background:var(--bg); border:1px solid var(--line2); border-radius:6px; overflow:hidden; }
+  .mic-meter-fill{ height:100%; width:0%; background:var(--green); transition:width 0.06s linear; }
+  .mic-hint{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); margin-top:8px; }
+  .rec-dot{ width:11px; height:11px; border-radius:50%; background:var(--line2); flex-shrink:0; }
+  .rec-dot.live{ background:var(--red); animation:recpulse 1s ease-in-out infinite; }
+  @keyframes recpulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
   .hidden{ display:none !important; }
   footer{ margin-top:32px; font-family:'Barlow Semi Condensed',sans-serif; font-size:11px; color:var(--gray); text-align:center; letter-spacing:0.04em; }
 </style>
@@ -161,11 +171,22 @@
   <div class="screen" id="screen-speak">
     <div class="card">
       <span class="tag">Speaking</span>
+      <div class="mic-check" id="mic-check">
+        <div class="mic-check-head">Microphone check</div>
+        <div class="mic-check-row">
+          <select id="mic-select" class="mic-select"></select>
+          <button class="rec-btn" id="btn-mic-test">Test Mic</button>
+        </div>
+        <div class="mic-meter"><div class="mic-meter-fill" id="mic-meter-fill"></div></div>
+        <div class="mic-hint" id="mic-hint">Pick your mic and tap Test — speak, watch the bar move, then hear it back before you start.</div>
+        <audio id="mic-test-audio" controls style="display:none; width:100%; margin-top:8px;"></audio>
+      </div>
       <div class="qcount" id="speak-qcount"></div>
       <div class="prompt-box" id="speak-prompt"></div>
       <div class="try-note" id="speak-try-note">You may record up to 2 times per prompt.</div>
       <div class="rec-row">
         <button class="rec-btn" id="btn-record">Record</button>
+        <span class="rec-dot" id="rec-dot"></span>
         <span class="rec-status" id="rec-status">Not recorded yet</span>
       </div>
       <audio id="speak-audio" controls style="display:none;"></audio>
@@ -230,6 +251,8 @@ let listenPlays = {};
 let recordAttempts = [0, 0, 0, 0, 0];
 let audioSpeaking = [null, null, null, null, null];
 let mediaStream=null, mediaRecorder=null, chunks=[];
+let micStream=null, selectedMicId=null;
+let recTimer=null, recSeconds=0;
 
 function $(id){ return document.getElementById(id); }
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $(id).classList.add('show'); }
@@ -460,6 +483,7 @@ $('btn-listen-next').addEventListener('click', ()=>{
     renderSections();
     renderSpeak();
     showScreen('screen-speak');
+    setupMicDevices();
   }
 });
 
@@ -487,20 +511,126 @@ function renderSpeak(){
   $('btn-speak-next').textContent = speakIdx === testData.speaking.length - 1 ? 'Submit Assessment' : 'Next';
 }
 
+function fmtTime(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
+function startRecTimer(){
+  recSeconds=0;
+  const dot=$('rec-dot'); if(dot) dot.classList.add('live');
+  $('rec-status').textContent = `Recording… ${fmtTime(0)}`;
+  recTimer = setInterval(()=>{ recSeconds++; $('rec-status').textContent = `Recording… ${fmtTime(recSeconds)}`; }, 1000);
+}
+function stopRecTimer(){
+  if(recTimer){ clearInterval(recTimer); recTimer=null; }
+  const dot=$('rec-dot'); if(dot) dot.classList.remove('live');
+}
+
+function recorderOpts(){
+  const opts = { audioBitsPerSecond: 128000 };
+  const mt = 'audio/webm;codecs=opus';
+  if(window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(mt)) opts.mimeType = mt;
+  return opts;
+}
+
+async function getMicStream(){
+  if(micStream && micStream.active && micStream._deviceId === (selectedMicId||null)) return micStream;
+  if(micStream){ micStream.getTracks().forEach(t=>t.stop()); }
+  const audio = { echoCancellation:false, noiseSuppression:true, autoGainControl:true, channelCount:1, sampleRate:48000 };
+  if(selectedMicId) audio.deviceId = { exact: selectedMicId };
+  micStream = await navigator.mediaDevices.getUserMedia({ audio });
+  micStream._deviceId = selectedMicId || null;
+  return micStream;
+}
+
+async function setupMicDevices(){
+  const sel = $('mic-select');
+  try{
+    const tmp = await navigator.mediaDevices.getUserMedia({ audio:true });
+    tmp.getTracks().forEach(t=>t.stop());
+  }catch(e){
+    $('mic-hint').textContent = 'Allow microphone access to test and record.';
+  }
+  try{
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const mics = devices.filter(d=>d.kind==='audioinput');
+    sel.innerHTML='';
+    mics.forEach((d,i)=>{
+      const o=document.createElement('option');
+      o.value=d.deviceId; o.textContent=d.label || `Microphone ${i+1}`;
+      sel.appendChild(o);
+    });
+    if(mics.length && !selectedMicId) selectedMicId = mics[0].deviceId;
+    if(selectedMicId) sel.value = selectedMicId;
+    sel.onchange = ()=>{
+      selectedMicId = sel.value;
+      if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
+    };
+  }catch(e){ /* ignore enumerate errors */ }
+}
+
+let testRec=null, testChunks=[], testAudioCtx=null, testRaf=null;
+async function startMicTest(){
+  try{
+    const stream = await getMicStream();
+    testAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const srcNode = testAudioCtx.createMediaStreamSource(stream);
+    const analyser = testAudioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    srcNode.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const fill = $('mic-meter-fill');
+    const tick = ()=>{
+      analyser.getByteTimeDomainData(data);
+      let peak=0;
+      for(let i=0;i<data.length;i++){ const v=Math.abs(data[i]-128); if(v>peak) peak=v; }
+      fill.style.width = Math.min(100, Math.round((peak/128)*180)) + '%';
+      testRaf = requestAnimationFrame(tick);
+    };
+    tick();
+    testChunks=[];
+    testRec = new MediaRecorder(stream, recorderOpts());
+    testRec.ondataavailable=e=>testChunks.push(e.data);
+    testRec.onstop=()=>{
+      const blob=new Blob(testChunks,{type:'audio/webm'});
+      const a=$('mic-test-audio');
+      a.src=URL.createObjectURL(blob); a.style.display='block';
+    };
+    testRec.start();
+    $('btn-mic-test').textContent='Stop Test';
+    $('btn-mic-test').classList.add('recording');
+    $('mic-hint').textContent='Speak now — watch the bar. Tap Stop Test to hear your sample.';
+  }catch(e){
+    $('mic-hint').textContent='Could not access this mic: '+(e.message||e);
+  }
+}
+function stopMicTest(){
+  if(testRaf){ cancelAnimationFrame(testRaf); testRaf=null; }
+  if(testRec && testRec.state!=='inactive'){ testRec.stop(); }
+  if(testAudioCtx){ try{ testAudioCtx.close(); }catch(_){ } testAudioCtx=null; }
+  $('mic-meter-fill').style.width='0%';
+  $('btn-mic-test').textContent='Test Mic';
+  $('btn-mic-test').classList.remove('recording');
+  $('mic-hint').textContent='If the playback sounds clear and close, you\'re ready. If it sounds far or noisy, pick another mic and test again.';
+}
+$('btn-mic-test').addEventListener('click', ()=>{
+  if($('btn-mic-test').classList.contains('recording')) stopMicTest();
+  else startMicTest();
+});
+
 $('btn-record').addEventListener('click', async ()=>{
   const btn = $('btn-record');
   if(btn.classList.contains('recording')){ mediaRecorder.stop(); return; }
+  if($('btn-mic-test').classList.contains('recording')) stopMicTest();
   const attempts = recordAttempts[speakIdx] || 0;
   if(attempts >= MAX_RECORD_ATTEMPTS){
     $('rec-status').textContent='No recording attempts remaining.';
     return;
   }
   try{
-    if(!mediaStream) mediaStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const stream = await getMicStream();
     chunks=[];
-    mediaRecorder = new MediaRecorder(mediaStream);
+    mediaRecorder = new MediaRecorder(stream, recorderOpts());
     mediaRecorder.ondataavailable = e=>chunks.push(e.data);
     mediaRecorder.onstop = async ()=>{
+      stopRecTimer();
       const blob = new Blob(chunks, {type:'audio/webm'});
       audioSpeaking[speakIdx] = await blobToBase64(blob);
       recordAttempts[speakIdx] = (recordAttempts[speakIdx] || 0) + 1;
@@ -508,7 +638,7 @@ $('btn-record').addEventListener('click', async ()=>{
     };
     mediaRecorder.start();
     btn.classList.add('recording'); btn.textContent='Stop';
-    $('rec-status').textContent='Recording…';
+    startRecTimer();
   } catch(err){
     $('rec-status').textContent='Microphone access denied or unavailable.';
   }
@@ -532,6 +662,8 @@ async function submitAll(){
       written,
       audio: { speaking: audioSpeaking },
     });
+    stopRecTimer();
+    if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
     if(mediaStream){ mediaStream.getTracks().forEach(t=>t.stop()); }
     $('formstatus').textContent = 'Filed';
     renderSections(true);
