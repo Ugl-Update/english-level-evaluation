@@ -41,6 +41,10 @@
   button:disabled{ background:var(--panel); color:var(--gray); cursor:not-allowed; }
   button:hover:not(:disabled){ background:#9a2824; }
   button.small{ padding:8px 16px; font-size:11px; }
+  .search-input{ background:var(--bg); border:1px solid var(--line2); color:var(--ink); padding:7px 10px; font-size:13px; font-family:'Barlow',sans-serif; border-radius:2px; width:160px; margin-bottom:0; }
+  .search-input:focus{ outline:none; border-color:var(--red); }
+  .pager{ display:flex; gap:10px; align-items:center; justify-content:flex-end; margin-top:12px; }
+  .pager-label{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); }
   .msg{ font-size:13px; margin-top:10px; }
   .msg.error{ color:var(--red); }
   .msg.success{ color:var(--green); }
@@ -178,20 +182,27 @@
     </div>
 
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:10px;">
         <span class="section-label">All Employees</span>
-        <button class="small" id="btn-refresh">Refresh</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="emp-search" class="search-input" placeholder="Search name…">
+          <button class="small" id="btn-refresh">Refresh</button>
+        </div>
       </div>
       <table id="emp-table">
         <thead><tr><th>Name</th><th>Status</th><th>Created</th><th>Link</th></tr></thead>
         <tbody id="emp-tbody"></tbody>
       </table>
+      <div class="pager" id="emp-pager"></div>
     </div>
 
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
         <span class="section-label">Results</span>
-        <button class="small" id="btn-refresh-results">Refresh</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="results-search" class="search-input" placeholder="Search name…">
+          <button class="small" id="btn-refresh-results">Refresh</button>
+        </div>
       </div>
       <div class="band-legend">
         <span class="score-tag score-strong">Strong</span> ≥ 87.5%
@@ -200,6 +211,7 @@
         <span class="score-tag score-pending-review">Pending review</span> not yet scored
       </div>
       <div id="results-list"></div>
+      <div class="pager" id="results-pager"></div>
     </div>
   </div>
 </div>
@@ -344,38 +356,71 @@ function formatEmpDate(emp){
   return isNaN(d.getTime()) ? '—' : d.toLocaleDateString();
 }
 
+let allEmployees = [];
+let empPage = 1;
+let empSearch = '';
+const EMP_PAGE_SIZE = 25;
+
+function buildPager(el, page, total, pageSize, go){
+  el.innerHTML = '';
+  const pages = Math.ceil(total / pageSize);
+  if(pages <= 1) return;
+  const prev = document.createElement('button'); prev.className='small'; prev.type='button'; prev.textContent='‹ Prev'; prev.disabled = page <= 1;
+  const label = document.createElement('span'); label.className='pager-label'; label.textContent = `Page ${page} of ${pages} · ${total} total`;
+  const next = document.createElement('button'); next.className='small'; next.type='button'; next.textContent='Next ›'; next.disabled = page >= pages;
+  prev.addEventListener('click', ()=>go(page-1));
+  next.addEventListener('click', ()=>go(page+1));
+  el.appendChild(prev); el.appendChild(label); el.appendChild(next);
+}
+
 async function refreshList(){
   try{
     const { employees } = await callFn('list-employees', { password: adminPassword });
-    const tbody = $('emp-tbody');
-    tbody.innerHTML='';
-    if(!employees.length){
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--gray); text-align:center; padding:18px;">No employees yet — generate a link above to add one.</td></tr>';
-      return;
-    }
-    employees.forEach(emp=>{
-      const link = `${CONFIG.TEST_PAGE_URL}?token=${emp.token}`;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(emp.name)}</td>
-        <td><span class="status-tag status-${emp.status}">${emp.status}</span></td>
-        <td style="font-size:12px; color:var(--light);">${formatEmpDate(emp)}</td>
-        <td style="font-size:11px;"><a href="${link}" target="_blank">open</a> &middot; <a href="#" class="emp-copy" data-link="${escapeHtml(link)}">copy</a></td>
-      `;
-      tbody.appendChild(tr);
-    });
-    tbody.querySelectorAll('.emp-copy').forEach(a=>{
-      a.addEventListener('click', e=>{
-        e.preventDefault();
-        navigator.clipboard.writeText(a.dataset.link);
-        const prev = a.textContent;
-        a.textContent = 'copied';
-        setTimeout(()=>{ a.textContent = prev; }, 2500);
-      });
-    });
+    allEmployees = employees || [];
+    empPage = 1;
+    renderEmployees();
   } catch(e){ console.error(e); }
 }
+
+function renderEmployees(){
+  const tbody = $('emp-tbody');
+  tbody.innerHTML = '';
+  const q = empSearch.trim().toLowerCase();
+  const filtered = q ? allEmployees.filter(e => (e.name || '').toLowerCase().includes(q)) : allEmployees;
+  if(!filtered.length){
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--gray); text-align:center; padding:18px;">${q ? 'No employees match your search.' : 'No employees yet — generate a link above to add one.'}</td></tr>`;
+    buildPager($('emp-pager'), 1, 0, EMP_PAGE_SIZE, goEmpPage);
+    return;
+  }
+  const pages = Math.ceil(filtered.length / EMP_PAGE_SIZE);
+  if(empPage > pages) empPage = pages;
+  if(empPage < 1) empPage = 1;
+  const start = (empPage - 1) * EMP_PAGE_SIZE;
+  filtered.slice(start, start + EMP_PAGE_SIZE).forEach(emp=>{
+    const link = `${CONFIG.TEST_PAGE_URL}?token=${emp.token}`;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(emp.name)}</td>
+      <td><span class="status-tag status-${emp.status}">${emp.status}</span></td>
+      <td style="font-size:12px; color:var(--light);">${formatEmpDate(emp)}</td>
+      <td style="font-size:11px;"><a href="${link}" target="_blank">open</a> &middot; <a href="#" class="emp-copy" data-link="${escapeHtml(link)}">copy</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.emp-copy').forEach(a=>{
+    a.addEventListener('click', e=>{
+      e.preventDefault();
+      navigator.clipboard.writeText(a.dataset.link);
+      const prev = a.textContent;
+      a.textContent = 'copied';
+      setTimeout(()=>{ a.textContent = prev; }, 2500);
+    });
+  });
+  buildPager($('emp-pager'), empPage, filtered.length, EMP_PAGE_SIZE, goEmpPage);
+}
+function goEmpPage(p){ empPage = p; renderEmployees(); }
 $('btn-refresh').addEventListener('click', e=> runWithFeedback(e.currentTarget, refreshList, 'Refreshing…', 'Updated'));
+$('emp-search').addEventListener('input', e=>{ empSearch = e.target.value; empPage = 1; renderEmployees(); });
 
 function assetUrl(path){
   return `${CONFIG.TEST_PAGE_URL}${String(path).replace(/^\//,'')}`;
@@ -849,17 +894,37 @@ function bindResend(bodyDiv, r){
   });
 }
 
+let allResults = [];
+let resultsPage = 1;
+let resultsSearch = '';
+const RESULTS_PAGE_SIZE = 10;
+
 async function refreshResults(){
   try{
     try { await ensureQuestionBank(); } catch(_){ /* enrichment is best-effort */ }
     const { results } = await callFn('get-results', { password: adminPassword });
+    allResults = results || [];
+    resultsPage = 1;
+    renderResultsList();
+  } catch(e){ console.error(e); }
+}
+
+function renderResultsList(){
+  try{
     const list = $('results-list');
     list.innerHTML = '';
-    if(!results.length){
-      list.innerHTML = '<p style="color:var(--gray); font-size:13px;">No completed assessments yet.</p>';
+    const q = resultsSearch.trim().toLowerCase();
+    const filtered = q ? allResults.filter(r => (r.employees?.name || '').toLowerCase().includes(q)) : allResults;
+    if(!filtered.length){
+      list.innerHTML = `<p style="color:var(--gray); font-size:13px;">${q ? 'No results match your search.' : 'No completed assessments yet.'}</p>`;
+      buildPager($('results-pager'), 1, 0, RESULTS_PAGE_SIZE, goResultsPage);
       return;
     }
-    results.forEach(r=>{
+    const pages = Math.ceil(filtered.length / RESULTS_PAGE_SIZE);
+    if(resultsPage > pages) resultsPage = pages;
+    if(resultsPage < 1) resultsPage = 1;
+    const start = (resultsPage - 1) * RESULTS_PAGE_SIZE;
+    filtered.slice(start, start + RESULTS_PAGE_SIZE).forEach(r=>{
       const name = r.employees?.name || 'Unknown';
       const date = new Date(r.submitted_at).toLocaleString();
       const div = document.createElement('div');
@@ -899,9 +964,12 @@ async function refreshResults(){
       bindResend(div.querySelector('.result-body'), r);
       list.appendChild(div);
     });
+    buildPager($('results-pager'), resultsPage, filtered.length, RESULTS_PAGE_SIZE, goResultsPage);
   } catch(e){ console.error(e); }
 }
+function goResultsPage(p){ resultsPage = p; renderResultsList(); }
 $('btn-refresh-results').addEventListener('click', e=> runWithFeedback(e.currentTarget, refreshResults, 'Refreshing…', 'Updated'));
+$('results-search').addEventListener('input', e=>{ resultsSearch = e.target.value; resultsPage = 1; renderResultsList(); });
 </script>
 </body>
 </html>
