@@ -435,8 +435,8 @@ function renderMcqQuestion(q){
 
 function renderMcqTier(tier, data){
   const vocab = (data.vocab || []).map(renderMcqQuestion).join('');
-  const grammar = (data.grammar || []).map(renderMcqQuestion).join('');
-  return `<div class="preview-sub">Vocabulary</div>${vocab}<div class="preview-sub">Grammar</div>${grammar}`;
+  const premises = (data.premises || []).map(renderMcqQuestion).join('');
+  return `<div class="preview-sub">Vocabulary</div>${vocab}<div class="preview-sub">Premises</div>${premises}`;
 }
 
 function renderListeningPreview(items){
@@ -495,8 +495,8 @@ function bindPreviewAccordions(root){
 }
 
 function renderFullPreview(data){
-  const intCount = (data.intermediate?.vocab?.length || 0) + (data.intermediate?.grammar?.length || 0);
-  const advCount = (data.advanced?.vocab?.length || 0) + (data.advanced?.grammar?.length || 0);
+  const intCount = (data.intermediate?.vocab?.length || 0) + (data.intermediate?.premises?.length || 0);
+  const advCount = (data.advanced?.vocab?.length || 0) + (data.advanced?.premises?.length || 0);
   return [
     previewSection('01 — Intermediate', `${intCount} MCQ`, renderMcqTier('intermediate', data.intermediate), true),
     previewSection('02 — Advanced MCQ', `${advCount} MCQ`, renderMcqTier('advanced', data.advanced), false),
@@ -588,7 +588,7 @@ function renderSpeakingHeader(r){
 }
 
 function renderWrittenAdvancedHeader(r){
-  return renderManualSectionHeader('Written — Advanced', r.tier_scores?.written_advanced, 10, 2);
+  return renderManualSectionHeader('Written — Advanced', r.tier_scores?.written_advanced, 15, 3);
 }
 
 function renderManualSectionHeader(label, scoreObj, maxDefault, itemCount){
@@ -664,8 +664,9 @@ function renderWrittenAdvanced(resultId, responses, tierScores){
   const scores = tierScores?.written_advanced?.scores || {};
   const lk = bankLookup();
   const items = [
-    { id:'AW_short', label:'Written — Advanced (Short Load)', text: responses?.AW_short || responses?.advanced || '' },
-    { id:'AW_damaged', label:'Written — Advanced (Damaged)', text: responses?.AW_damaged || '' },
+    { id:'AW_slc', label:'Written — Advanced (SLC Pickup)', text: responses?.AW_slc || responses?.AW_short || responses?.advanced || '' },
+    { id:'AW_reefer', label:'Written — Advanced (Reefer / Pulp)', text: responses?.AW_reefer || responses?.AW_damaged || '' },
+    { id:'AW_airbags', label:'Written — Advanced (Airbags)', text: responses?.AW_airbags || '' },
   ];
   return items.map((item, i) => {
     const b = lk.writtenAdv[item.id] || lk.writtenAdvArr[i] || {};
@@ -717,9 +718,9 @@ function collectManualScores(div){
 
 function updateLiveSectionTotals(div, resultId){
   const sections = {
-    listening: { max: 50, selector: 'Listening' },
+    listening: { max: 35, selector: 'Listening' },
     speaking: { max: 25, selector: 'Speaking' },
-    written_advanced: { max: 10, selector: 'Written — Advanced' },
+    written_advanced: { max: 15, selector: 'Written — Advanced' },
   };
   for(const [section, cfg] of Object.entries(sections)){
     const inputs = div.querySelectorAll(`.item-score[data-section="${section}"]`);

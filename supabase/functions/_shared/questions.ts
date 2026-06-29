@@ -28,35 +28,33 @@ export type SpeakingItem = {
   prompt: string;
 };
 
-export const QUESTION_BANK: Record<string, { vocab: Question[]; grammar: Question[] }> = {
+export const QUESTION_BANK: Record<string, { vocab: Question[]; premises: Question[] }> = {
   intermediate: {
     vocab: [
-      { id: 'IV1', text: '"SLC" on a bill of lading stands for:', options: ['Shipper Load & Count', 'Sealed Load Confirmation', 'Standard Load Charge', 'Shipping Label Code'], correct: 0 },
-      { id: 'IV2', text: '"OS&D" means:', options: ['Over, Short, or Damaged', 'Order Sent & Delivered', 'On-Site Delivery', 'Official Shipment Document'], correct: 0 },
+      { id: 'IV_RC', text: 'A rate confirmation is:', options: ['A shipper\'s internal packing list for the freight', 'A driver\'s daily log of hours and miles', 'A legally binding pay agreement between broker and carrier; the broker must provide it for the carrier to sign before proceeding', 'An optional quote that either side can change after pickup'], correct: 2 },
+      { id: 'IV_WT', text: 'On a standard 5-axle tractor-trailer, the legal weight limits are:', options: ['Maximum gross 80,000 lbs — about 12,000 on the steer axle, 34,000 on the drives, and 34,000 on the trailer tandems', 'Maximum gross 80,000 lbs, all of it allowed on a single axle', 'Maximum gross 100,000 lbs with no per-axle limit', 'There is no legal maximum as long as the load is sealed'], correct: 0 },
+      { id: 'IV_OO', text: 'An owner-operator is someone who:', options: ['Is an employee paid per mile in the company\'s truck', 'Drives a truck leased from a carrier and pays its costs — payments, fuel, repairs, fuel tax; the appeal is "instant ownership" with a small down payment', 'Books loads as a broker but never drives a truck', 'Owns the truck and runs the business, and keeps more of the revenue'], correct: 3 },
+      { id: 'IV1', text: '"SLC" on a bill of lading stands for:', options: ['Sealed Load Confirmation', 'Shipper Load & Count', 'Standard Load Charge', 'Shipping Label Code'], correct: 1 },
+      { id: 'IV2', text: '"OS&D" means:', options: ['Order Sent & Delivered', 'On-Site Delivery', 'Official Shipment Document', 'Over, Short, or Damaged'], correct: 3 },
       { id: 'IV3', text: '"TONU" stands for:', options: ['Truck Order Not Used', 'Trailer On No Update', 'Tracking Order Number', 'Total Order Not Unloaded'], correct: 0 },
       { id: 'IV4', text: '"FCFS" at a stop means:', options: ['A set appointment time', 'First come, first served — no set time', 'Fast Check First Service', 'Final Confirmation From Shipper'], correct: 1 },
-      { id: 'IV5', text: '"PTI" stands for:', options: ['Pre-Trip Inspection', 'Paperwork Tracking Index', 'Pickup Time Indicator', 'Power Trailer Inspection'], correct: 0 },
+      { id: 'IV5', text: '"PTI" stands for:', options: ['Paperwork Tracking Index', 'Pickup Time Indicator', 'Pre-Trip Inspection', 'Power Trailer Inspection'], correct: 2 },
     ],
-    grammar: [
-      { id: 'IG1', text: '"If the seal number ___ not match the BOL, the updater must stop and call the broker."', options: ['do', 'does', 'doing', 'done'], correct: 1 },
-      { id: 'IG2', text: '"By the time dispatch called, the driver ___ already left the shipper."', options: ['has', 'had', 'have', 'having'], correct: 1 },
-      { id: 'IG3', text: '"Detention is only paid if the broker ___ notified before it starts."', options: ['is', 'are', 'be', 'being'], correct: 0 },
-      { id: 'IG4', text: '"Neither the RC nor the BOL ___ the trailer number listed on most Power Only loads."', options: ['has', 'have', 'had', 'having'], correct: 0 },
+    premises: [
+      { id: 'IP1', text: 'On a Power Only load, before the driver hooks to the trailer the updater should:', options: ['Hook to whichever trailer is closest and update later', 'Call dispatch to get the assigned trailer number before hooking', 'Use the BOL number printed on the BOL', 'Wait for the broker to email the trailer number'], correct: 1 },
     ],
   },
   advanced: {
     vocab: [
-      { id: 'AV1', text: 'On a rate confirmation, "Reefer 53" refers to:', options: ['A 53-foot refrigerated trailer — the length, not a temperature', 'A reefer set to 53 degrees', '53 pallets of refrigerated freight', 'A 53-minute cooling cycle'], correct: 0 },
+      { id: 'AV1', text: 'On a rate confirmation, "Reefer 53" refers to:', options: ['A reefer set to 53 degrees', '53 pallets of refrigerated freight', 'A 53-foot refrigerated trailer — the length, not a temperature', 'A 53-minute cooling cycle'], correct: 2 },
       { id: 'AV2', text: 'A "PULP" temperature reading is:', options: ['The temperature shown on the reefer display', 'A physical probe reading taken inside the product itself', 'The outside air temperature at the dock', 'The setpoint listed on the RC'], correct: 1 },
-      { id: 'AV3', text: '"Net 30" on a rate confirmation means:', options: ['You are paid 30 days after the broker receives your paperwork', 'You have 30 days to accept the load', 'The load is 30 miles long', 'You get a 30 percent rate increase'], correct: 0 },
+      { id: 'AV3', text: '"Net 30" on a rate confirmation means:', options: ['You have 30 days to accept the load', 'The load is 30 miles long', 'You get a 30 percent rate increase', 'You are paid 30 days after the broker receives your paperwork'], correct: 3 },
       { id: 'AV4', text: '"Power Only" means:', options: ['You supply the tractor only and pull the broker\'s or shipper\'s trailer', 'The truck has no working brakes', 'Only electronic logs are used', 'A discounted flat rate'], correct: 0 },
-      { id: 'AV5', text: 'Accessorial charges (detention, tarps, layover) must be:', options: ['Pre-approved by the broker in writing', 'Paid by the driver', 'Added automatically to every load', 'Ignored unless over 500 dollars'], correct: 0 },
+      { id: 'AV5', text: 'Accessorial charges (detention, tarps, layover) must be:', options: ['Paid by the driver', 'Added automatically to every load', 'Pre-approved by the broker in writing', 'Ignored unless over 500 dollars'], correct: 2 },
     ],
-    grammar: [
-      { id: 'AG1', text: '"By the time the driver arrives, the appointment window ___ already closed."', options: ['has', 'had', 'will have', 'would have'], correct: 2 },
-      { id: 'AG2', text: '"The shipper acted as though the freight ___ been loaded cold."', options: ['has', 'had', 'have', 'having'], correct: 1 },
-      { id: 'AG3', text: '"Despite ___ the seal twice, the driver wrote down the wrong number."', options: ['check', 'checked', 'checking', 'to check'], correct: 2 },
-      { id: 'AG4', text: '"The driver, ___ trailer was pre-loaded and sealed, marked the BOL as SLC."', options: ['who', 'which', 'whose', 'that'], correct: 2 },
+    premises: [
+      { id: 'AP1', text: 'A load was canceled by the broker right before pickup, after the truck had already been dispatched to the shipper. From the broker, dispatch should request:', options: ['A full line-haul payment as if delivered', 'A TONU (Truck Order Not Used)', 'A detention charge for the wasted time', 'Nothing — a cancelled load is never billable'], correct: 1 },
+      { id: 'AP3', text: 'A broker verbally promises an extra $150 to tarp the load, but it is not written on the rate confirmation. Before the driver tarps, dispatch should:', options: ['Have the driver tarp now and argue the charge later', 'Add $150 to the invoice without telling the broker', 'Refuse the load because the RC is wrong', 'Get the accessorial pre-approved by the broker in writing first'], correct: 3 },
     ],
   },
 };
@@ -69,12 +67,16 @@ export type WrittenItem = {
 export const WRITTEN_PROMPTS: Record<string, WrittenItem[]> = {
   advanced: [
     {
-      id: 'AW_short',
-      prompt: 'A shipment arrived and the receiver reports the load is short — freight is missing compared to the BOL. Write the email you would send the broker while knowing that the shipper loaded, secured, and sealed the truck himself, we informed the broker about this during the pickup, and the BOL has SLC written on it.\n\nReport the shortage, and state clearly what you need from them next.',
+      id: 'AW_slc',
+      prompt: 'The driver sent the pickup pictures, but only sent a photo of the trailer with the seal on it plus the paperwork (PPW). When you asked him for the load and securement pictures, he told you the shipper loaded and sealed the trailer himself, and the BOL has SLC (Shipper Load & Count) written on it.\n\nWrite the exact email you would send to the broker in this case.',
     },
     {
-      id: 'AW_damaged',
-      prompt: 'A shipment arrived with product damage discovered at delivery. Write the email you would send the broker while knowing that the shipper loaded, secured, and sealed the truck himself, we informed the broker about this during the pickup, and the BOL has SLC written on it.\n\nReport the damage, send proof that it isn\'t our fault, say what kind of proof it is (Important), and state clearly what you need from them next.',
+      id: 'AW_reefer',
+      prompt: 'The driver sent the pickup pictures. The BOL says the temperature must be 34°F, but the rate confirmation says to set it at 24°F, and the product pulp temperature is showing 67°F.\n\nWrite the exact email you would send to the broker in this case.',
+    },
+    {
+      id: 'AW_airbags',
+      prompt: 'The driver sent the pickup pictures. The load needs airbags for securement, and the driver already asked the shipper — they don\'t have any airbags.\n\nWrite the exact email you would send to the broker in this case.',
     },
   ],
 };
@@ -87,12 +89,12 @@ export const LISTENING: ListeningItem[] = [
     audioFile: 'audio/L1.wav',
     question: 'What does the broker want before pickup?',
     options: [
-      'The driver docked 15 minutes early, and the seal confirmed on the correct door',
       'The driver docked 15 minutes early; seal confirmation can wait until after loading',
+      'The driver docked 15 minutes early, and the seal confirmed on the correct door',
       'Confirm the seal is on the correct door; arrival time is flexible',
       'Arrive at the appointment window and send a seal photo after pickup',
     ],
-    correct: 0,
+    correct: 1,
   },
   {
     id: 'L2',
@@ -114,13 +116,6 @@ export const LISTENING: ListeningItem[] = [
       '1,050 dollars — MacroPoint is deducted from the flat rate',
     ],
     correct: 2,
-  },
-  {
-    id: 'L4',
-    type: 'written',
-    script: "Detention starts two hours after your appointment, at thirty-five dollars an hour, capped at one hundred fifty. But you have to notify us before it starts, or it won't be paid.",
-    audioFile: 'audio/L4.wav',
-    question: 'Explain what must happen for detention to be paid on this load, including timing and notification.',
   },
   {
     id: 'L5',
@@ -150,38 +145,17 @@ export const LISTENING: ListeningItem[] = [
     audioFile: 'audio/L7.wav',
     question: 'If freight is damaged, what is the deadline to report it with pictures?',
     options: [
-      'Within 2 hours of discovering the damage',
       'Within 2 hours of completing delivery paperwork',
       'Before the end of the business day',
       'Within 24 hours of delivery',
+      'Within 2 hours of discovering the damage',
     ],
-    correct: 0,
-  },
-  {
-    id: 'L8',
-    type: 'written',
-    script: "This is dispatch. The driver's clock is tight — confirm he actually has the hours of service to make this pickup before you book it.",
-    audioFile: 'audio/L8.wav',
-    question: 'What is dispatch asking you to verify before booking, and why?',
-  },
-  {
-    id: 'L9',
-    type: 'mcq',
-    script: "Runs over five hundred miles are team loads. Both drivers present their CDLs, and we need Form twenty eighty-one. No team could mean up to a five thousand dollar penalty.",
-    audioFile: 'audio/L9.wav',
-    question: "What makes this a team load, and what's required?",
-    options: [
-      'Over 500 miles; both CDLs and Form 2081',
-      'Over 500 miles; one CDL and Form 2081 on file',
-      'Over 500 miles; team drivers optional if HOS allows solo',
-      'Any load over 500 miles; penalty only applies to hazmat',
-    ],
-    correct: 0,
+    correct: 3,
   },
   {
     id: 'L10',
     type: 'written',
-    script: "I'm adding our coordinator to this email. Make sure you reply all and reattach the rate confirmation, since she wasn't on the original chain.",
+    script: "I'm adding our afterhours team to this email. Make sure you reply all and reattach the rate confirmation, since they were not on the original chain.",
     audioFile: 'audio/L10.wav',
     question: 'What two things should you do when a new contact is added to the email thread?',
   },
@@ -198,7 +172,7 @@ export const SPEAKING: SpeakingItem[] = [
 export function publicQuestions(tier: string) {
   const bank = QUESTION_BANK[tier];
   const strip = (qs: Question[]) => qs.map(({ id, text, options }) => ({ id, text, options }));
-  return { vocab: strip(bank.vocab), grammar: strip(bank.grammar) };
+  return { vocab: strip(bank.vocab), premises: strip(bank.premises) };
 }
 
 export function publicListening() {

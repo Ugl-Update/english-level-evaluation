@@ -14,9 +14,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LISTENING_IDS = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10"];
+const LISTENING_IDS = ["L1", "L2", "L3", "L5", "L6", "L7", "L10"];
 const SPEAKING_IDS = ["S1", "S2", "S3", "S4", "S5"];
-const WRITTEN_ADVANCED_IDS = ["AW_short", "AW_damaged"];
+const WRITTEN_ADVANCED_IDS = ["AW_slc", "AW_reefer", "AW_airbags"];
 
 function clampScore(n: number): number {
   if (!Number.isFinite(n)) return 0;

@@ -21,7 +21,7 @@ function gradeTier(tier: string, answers: Record<string, Record<string, Record<s
   const bank = QUESTION_BANK[tier];
   let correct = 0;
   const missed: MissedItem[] = [];
-  for (const cat of ["vocab", "grammar"] as const) {
+  for (const cat of ["vocab", "premises"] as const) {
     for (const q of bank[cat]) {
       const chosen = answers?.[tier]?.[cat]?.[q.id];
       if (chosen === q.correct) { correct++; }
@@ -34,7 +34,7 @@ function gradeTier(tier: string, answers: Record<string, Record<string, Record<s
       }
     }
   }
-  const total = bank.vocab.length + bank.grammar.length;
+  const total = bank.vocab.length + bank.premises.length;
   return { correct, total, band: band(correct, total), missed };
 }
 
@@ -91,12 +91,12 @@ Deno.serve(async (req) => {
     // Listening (manual) — reset to pending for re-grading
     if (sections.includes("listening")) {
       missedItems.listening_review = collectListeningReview(answers?.listening || {}, written || {});
-      tierScores.listening = { manual: true, scores: {}, total: 0, max: 50, scored: 0, band: "Pending review" };
+      tierScores.listening = { manual: true, scores: {}, total: 0, max: 35, scored: 0, band: "Pending review" };
     }
 
     // Advanced section carries the written prompts — reset written_advanced for re-grading
     if (sections.includes("advanced")) {
-      tierScores.written_advanced = { manual: true, scores: {}, total: 0, max: 10, scored: 0, band: "Pending review" };
+      tierScores.written_advanced = { manual: true, scores: {}, total: 0, max: 15, scored: 0, band: "Pending review" };
     }
 
     // Speaking (manual) — upload clips + reset to pending

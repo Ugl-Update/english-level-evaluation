@@ -267,8 +267,8 @@ let listenIdx = 0;
 let speakIdx = 0;
 let writtenIdx = 0;
 let answers = {
-  intermediate: { vocab:{}, grammar:{} },
-  advanced: { vocab:{}, grammar:{} },
+  intermediate: { vocab:{}, premises:{} },
+  advanced: { vocab:{}, premises:{} },
   listening: {},
 };
 let written = {};
@@ -383,7 +383,7 @@ function buildMcqList(){
   const t = testData.tiers[mcqTier];
   mcqList = [
     ...t.vocab.map(q=>({...q, category:'vocab'})),
-    ...t.grammar.map(q=>({...q, category:'grammar'})),
+    ...t.premises.map(q=>({...q, category:'premises'})),
   ];
   mcqIdx = 0;
 }
@@ -391,7 +391,7 @@ function buildMcqList(){
 function renderMcq(){
   const tierLabel = mcqTier === 'intermediate' ? 'Intermediate' : 'Advanced';
   const q = mcqList[mcqIdx];
-  $('mcq-tag').textContent = `${tierLabel} — ${q.category==='vocab'?'Vocabulary':'Grammar'}`;
+  $('mcq-tag').textContent = `${tierLabel} — ${q.category==='vocab'?'Vocabulary':'Premises'}`;
   $('mcq-qcount').textContent = `Item ${mcqIdx+1} of ${mcqList.length}`;
   $('mcq-qtext').textContent = q.text;
   const optsDiv = $('mcq-options');
