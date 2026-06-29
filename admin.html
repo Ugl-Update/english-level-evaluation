@@ -107,6 +107,26 @@
   .preview-script{ font-size:12px; color:var(--light); font-style:italic; background:var(--card); border:1px solid var(--line2); padding:10px; margin:8px 0; }
   .preview-written{ font-size:13px; color:var(--light); background:var(--card); border:1px solid var(--line2); padding:12px; margin-top:6px; white-space:pre-wrap; }
   .preview-audio{ width:100%; margin:8px 0; }
+  .aplayer{ display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line2); border-radius:6px; padding:8px 12px; width:100%; margin:8px 0; }
+  .aplayer-btn{ width:34px; height:34px; flex-shrink:0; border-radius:50%; border:none; background:var(--red); color:#fff; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1; }
+  .aplayer-btn:hover{ background:#9a2824; }
+  .aplayer-track{ flex:1; height:6px; background:var(--panel); border-radius:3px; cursor:pointer; position:relative; overflow:hidden; }
+  .aplayer-prog{ position:absolute; left:0; top:0; height:100%; width:0%; background:var(--red); border-radius:3px; }
+  .aplayer-time{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); flex-shrink:0; min-width:78px; text-align:right; }
+  .attempt-history{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .attempt-head, .resend-head{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gray); margin-bottom:8px; }
+  .attempt-list{ list-style:none; padding-left:0; font-size:13px; color:var(--light); }
+  .attempt-list li{ padding:6px 0 6px 10px; border-left:2px solid var(--gold); margin-bottom:6px; }
+  .attempt-meta{ color:var(--gray); font-size:11px; }
+  .resend-block{ margin-top:18px; padding-top:14px; border-top:1px solid var(--line); }
+  .resend-hint{ font-size:12px; color:var(--gray); margin-bottom:10px; }
+  .resend-checks{ display:flex; flex-wrap:wrap; gap:10px 18px; margin-bottom:12px; }
+  .resend-check{ font-size:13px; color:var(--light); display:flex; align-items:center; gap:6px; margin-bottom:0; }
+  .resend-reason{ width:100%; background:var(--bg); border:1px solid var(--line2); color:var(--ink); padding:9px 12px; font-size:13px; font-family:'Barlow',sans-serif; border-radius:2px; margin-bottom:10px; }
+  .resend-actions{ display:flex; gap:10px; align-items:center; }
+  .resend-msg{ font-size:12px; }
+  .resend-link-row{ display:flex; gap:10px; align-items:center; background:var(--bg); border:1px solid var(--line2); padding:8px 12px; margin-top:10px; font-size:12px; word-break:break-all; }
+  .resend-link{ flex:1; }
   a{ color:var(--red); }
   .band-legend{ font-size:11px; color:var(--gray); margin-bottom:14px; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; }
   .band-legend .score-tag{ margin-right:2px; }
@@ -192,6 +212,13 @@ const CONFIG = {
 
 let adminPassword = '';
 let openResultIds = new Set();
+const SECTION_LABEL = { intermediate:'Intermediate', advanced:'Advanced', listening:'Listening', speaking:'Speaking' };
+const RETEST_SECTIONS = [
+  { key:'intermediate', label:'Intermediate (MCQ)' },
+  { key:'advanced', label:'Advanced (MCQ + Written)' },
+  { key:'listening', label:'Listening' },
+  { key:'speaking', label:'Speaking' },
+];
 function $(id){ return document.getElementById(id); }
 function fnUrl(name){ return `${CONFIG.SUPABASE_URL}/functions/v1/${name}`; }
 async function callFn(name, body, timeoutMs = 30000){
@@ -234,6 +261,32 @@ async function runWithFeedback(btn, fn, busyLabel, doneLabel){
       btn.dataset.busy = '0';
     }, 900);
   }
+}
+
+function buildAudioPlayer(src, preload){
+  const wrap=document.createElement('div'); wrap.className='aplayer';
+  const btn=document.createElement('button'); btn.type='button'; btn.className='aplayer-btn'; btn.textContent='▶'; btn.setAttribute('aria-label','Play');
+  const track=document.createElement('div'); track.className='aplayer-track';
+  const prog=document.createElement('div'); prog.className='aplayer-prog'; track.appendChild(prog);
+  const time=document.createElement('span'); time.className='aplayer-time'; time.textContent='0:00';
+  const audio=document.createElement('audio'); audio.preload=preload||'metadata'; if(src) audio.src=src;
+  wrap.appendChild(btn); wrap.appendChild(track); wrap.appendChild(time); wrap.appendChild(audio);
+  const fmt=(t)=>{ if(!isFinite(t)||t<0)t=0; const m=Math.floor(t/60); const s=String(Math.floor(t%60)).padStart(2,'0'); return m+':'+s; };
+  function upd(){ const d=audio.duration,c=audio.currentTime; prog.style.width=(d?(c/d*100):0)+'%'; time.textContent=(d&&isFinite(d))?(fmt(c)+' / '+fmt(d)):fmt(c); }
+  btn.addEventListener('click',()=>{ if(audio.paused)audio.play(); else audio.pause(); });
+  audio.addEventListener('play',()=>{ btn.textContent='⏸'; });
+  audio.addEventListener('pause',()=>{ btn.textContent='▶'; });
+  audio.addEventListener('ended',()=>{ btn.textContent='▶'; audio.currentTime=0; prog.style.width='0%'; upd(); });
+  audio.addEventListener('timeupdate',upd);
+  audio.addEventListener('loadedmetadata',upd);
+  track.addEventListener('click',e=>{ const r=track.getBoundingClientRect(); const ratio=(e.clientX-r.left)/r.width; if(audio.duration) audio.currentTime=Math.max(0,Math.min(1,ratio))*audio.duration; });
+  return wrap;
+}
+function initAudioPlayers(root){
+  if(!root) return;
+  root.querySelectorAll('.aplayer-src').forEach(ph=>{
+    ph.replaceWith(buildAudioPlayer(ph.getAttribute('data-src'), ph.getAttribute('data-preload')||'none'));
+  });
 }
 
 $('btn-login').addEventListener('click', async ()=>{
@@ -342,7 +395,7 @@ function renderMcqTier(tier, data){
 
 function renderListeningPreview(items){
   return items.map(item => {
-    const audio = item.audioFile ? `<audio class="preview-audio" controls preload="none" src="${assetUrl(item.audioFile)}"></audio>` : '';
+    const audio = item.audioFile ? `<div class="aplayer-src" data-src="${escapeHtml(assetUrl(item.audioFile))}" data-preload="none"></div>` : '';
     const script = item.script ? `<div class="preview-script">"${escapeHtml(item.script)}"</div>` : '';
     if(item.type === 'written'){
       return `<div class="preview-q">
@@ -453,6 +506,7 @@ async function loadPreview(){
     const { raw: data } = await ensureQuestionBank(true);
     el.innerHTML = renderFullPreview(data);
     bindPreviewAccordions(el);
+    initAudioPlayers(el);
   } catch(e){
     el.innerHTML = `<p class="msg error">${escapeHtml(e.message)}</p><button class="small" type="button" id="preview-retry-btn" style="margin-top:10px;">Retry</button>`;
     const retry = $('preview-retry-btn');
@@ -524,7 +578,7 @@ function renderListeningReview(resultId, items, writtenResponses, tierScores){
   const list = (items && items.length) ? items : buildLegacyListeningItems(writtenResponses);
   return list.map((item, i) => {
     const b = lk.listening[item.id] || lk.listeningArr[i] || {};
-    const audio = b.audioFile ? `<audio class="preview-audio" controls preload="none" src="${assetUrl(b.audioFile)}"></audio>` : '';
+    const audio = b.audioFile ? `<div class="aplayer-src" data-src="${escapeHtml(assetUrl(b.audioFile))}" data-preload="none"></div>` : '';
     const script = b.script ? `<p class="rv-script"><span class="rv-label">Transcript</span>"${escapeHtml(b.script)}"</p>` : '';
     const question = item.question || b.question || '';
     if(item.type === 'written'){
@@ -599,7 +653,7 @@ function renderSpeaking(resultId, urls, tierScores){
         ${scoreInput(resultId, 'speaking', id, scores[id])}
       </div>
       ${b.prompt ? `<p class="rv-q"><span class="rv-label">Prompt</span>${escapeHtml(b.prompt)}</p>` : ''}
-      <audio controls src="${v}" style="width:100%; margin-top:6px;"></audio>
+      <div class="aplayer-src" data-src="${escapeHtml(v)}" data-preload="none"></div>
     </div>`;
   }).join('');
 }
@@ -722,6 +776,78 @@ function renderManualSaveBar(resultId){
   </div>`;
 }
 
+function renderAttemptHistory(r){
+  const attempts = Array.isArray(r.attempts) ? r.attempts.slice() : [];
+  const items = [];
+  if(!attempts.some(a => Number(a.attempt_no) === 1)){
+    const date = r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '—';
+    items.push(`<li><strong>Attempt 1</strong> — All sections <span class="attempt-meta">completed ${escapeHtml(date)}</span></li>`);
+  }
+  attempts.sort((a,b)=>Number(a.attempt_no||0)-Number(b.attempt_no||0)).forEach(a => {
+    const secs = Array.isArray(a.sections) && a.sections.length
+      ? a.sections.map(s=>SECTION_LABEL[s]||s).join(', ')
+      : 'All sections';
+    const issued = a.issued_at ? new Date(a.issued_at).toLocaleDateString() : '—';
+    const state = a.completed_at ? `completed ${new Date(a.completed_at).toLocaleString()}` : (a.status || 'pending');
+    const reason = a.reason ? ` — “${escapeHtml(a.reason)}”` : '';
+    items.push(`<li><strong>Attempt ${escapeHtml(String(a.attempt_no ?? '?'))}</strong> — ${escapeHtml(secs)}${reason} <span class="attempt-meta">issued ${escapeHtml(issued)} · ${escapeHtml(state)}</span></li>`);
+  });
+  return `<div class="attempt-history"><div class="attempt-head">Attempt history</div><ul class="attempt-list">${items.join('')}</ul></div>`;
+}
+
+function renderResendPanel(r){
+  const empId = r.employee_id || r.employees?.id || '';
+  const checks = RETEST_SECTIONS.map(s =>
+    `<label class="resend-check"><input type="checkbox" class="resend-sec" value="${s.key}"> ${escapeHtml(s.label)}</label>`
+  ).join('');
+  return `<div class="resend-block" data-employee-id="${escapeHtml(empId)}" data-result-id="${escapeHtml(r.id)}">
+    <div class="resend-head">Re-send test</div>
+    <p class="resend-hint">Pick the sections to re-send. The candidate gets a new link (the old one stops working). Existing scores stay — only the re-done sections are replaced.</p>
+    <div class="resend-checks">${checks}</div>
+    <input type="text" class="resend-reason" placeholder="Reason (optional) — e.g. forgot to record speaking">
+    <div class="resend-actions">
+      <button class="small" data-resend-go>Generate re-test link</button>
+      <span class="resend-msg"></span>
+    </div>
+    <div class="resend-link-row hidden">
+      <span class="resend-link"></span>
+      <button class="small" data-resend-copy>Copy</button>
+    </div>
+  </div>`;
+}
+
+function bindResend(bodyDiv, r){
+  const block = bodyDiv.querySelector('.resend-block');
+  if(!block) return;
+  const goBtn = block.querySelector('[data-resend-go]');
+  const msg = block.querySelector('.resend-msg');
+  goBtn.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    const sections = Array.from(block.querySelectorAll('.resend-sec:checked')).map(c=>c.value);
+    if(!sections.length){ msg.textContent='Pick at least one section.'; msg.style.color='var(--red)'; return; }
+    const reason = block.querySelector('.resend-reason').value.trim();
+    const employee_id = block.getAttribute('data-employee-id') || null;
+    const result_id = block.getAttribute('data-result-id') || null;
+    const orig = goBtn.textContent;
+    goBtn.disabled = true; goBtn.textContent = 'Generating…'; msg.textContent = '';
+    try{
+      const { token } = await callFn('create-retest', { password: adminPassword, employee_id, result_id, sections, reason });
+      const link = `${CONFIG.TEST_PAGE_URL}?token=${token}`;
+      const row = block.querySelector('.resend-link-row');
+      row.classList.remove('hidden');
+      block.querySelector('.resend-link').textContent = link;
+      const copyBtn = block.querySelector('[data-resend-copy]');
+      copyBtn.onclick = ()=>{ navigator.clipboard.writeText(link); copyBtn.textContent='Copied'; setTimeout(()=>copyBtn.textContent='Copy',2500); };
+      msg.textContent = 'New link generated — the old link is now disabled.'; msg.style.color = 'var(--green)';
+      refreshList();
+    }catch(err){
+      msg.textContent = err.message; msg.style.color = 'var(--red)';
+    } finally {
+      goBtn.disabled = false; goBtn.textContent = orig;
+    }
+  });
+}
+
 async function refreshResults(){
   try{
     try { await ensureQuestionBank(); } catch(_){ /* enrichment is best-effort */ }
@@ -757,6 +883,8 @@ async function refreshResults(){
           ${renderSpeakingHeader(r)}
           <div class="audio-block">${renderSpeaking(r.id, r.audio_urls, r.tier_scores)}</div>
           ${renderManualSaveBar(r.id)}
+          ${renderAttemptHistory(r)}
+          ${renderResendPanel(r)}
         </div>
       `;
       div.querySelector('.result-head').addEventListener('click', ()=>{
@@ -765,7 +893,9 @@ async function refreshResults(){
         if(body.classList.contains('hidden')) openResultIds.delete(r.id);
         else openResultIds.add(r.id);
       });
+      initAudioPlayers(div);
       bindManualScoring(div.querySelector('.result-body'), r.id);
+      bindResend(div.querySelector('.result-body'), r);
       list.appendChild(div);
     });
   } catch(e){ console.error(e); }

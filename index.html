@@ -95,6 +95,22 @@
   .mic-meter{ height:10px; background:var(--bg); border:1px solid var(--line2); border-radius:6px; overflow:hidden; }
   .mic-meter-fill{ height:100%; width:0%; background:var(--green); transition:width 0.06s linear; }
   .mic-hint{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); margin-top:8px; }
+  .mc-intro{ font-size:15px; color:var(--light); margin-bottom:16px; line-height:1.55; }
+  .mc-label{ display:block; font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:var(--gray); margin-bottom:6px; }
+  .mc-stage{ border:1px solid var(--line2); border-radius:6px; padding:24px 18px; text-align:center; margin:16px 0; background:var(--card2); transition:background 0.2s, border-color 0.2s; }
+  .mc-stage[data-state="recording"]{ background:rgba(181,48,43,0.08); border-color:var(--red); }
+  .mc-stage[data-state="playing"]{ background:rgba(156,115,39,0.10); border-color:var(--gold); }
+  .mc-stage[data-state="done"]{ background:rgba(62,127,92,0.10); border-color:var(--green); }
+  .mc-state-icon{ font-size:30px; line-height:1; margin-bottom:10px; }
+  .mc-stage[data-state="recording"] .mc-state-icon{ animation:recpulse 1s ease-in-out infinite; }
+  .mc-state-text{ font-family:'Barlow Semi Condensed',sans-serif; font-weight:700; font-size:15px; color:var(--ink); margin-bottom:16px; }
+  .mc-actions{ display:flex; justify-content:center; margin-bottom:10px; }
+  .aplayer{ display:flex; align-items:center; gap:10px; background:var(--card2); border:1px solid var(--line2); border-radius:6px; padding:8px 12px; width:100%; margin-top:8px; }
+  .aplayer-btn{ width:34px; height:34px; flex-shrink:0; border-radius:50%; border:none; background:var(--red); color:#fff; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1; }
+  .aplayer-btn:hover{ background:#9a2824; }
+  .aplayer-track{ flex:1; height:6px; background:var(--panel); border-radius:3px; cursor:pointer; position:relative; overflow:hidden; }
+  .aplayer-prog{ position:absolute; left:0; top:0; height:100%; width:0%; background:var(--red); border-radius:3px; }
+  .aplayer-time{ font-family:'Barlow Semi Condensed',sans-serif; font-size:12px; color:var(--gray); flex-shrink:0; min-width:78px; text-align:right; }
   .rec-dot{ width:11px; height:11px; border-radius:50%; background:var(--line2); flex-shrink:0; }
   .rec-dot.live{ background:var(--red); animation:recpulse 1s ease-in-out infinite; }
   @keyframes recpulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.25; } }
@@ -168,19 +184,29 @@
     </div>
   </div>
 
+  <div class="screen" id="screen-mic-check">
+    <div class="card">
+      <span class="tag">Microphone Check</span>
+      <p class="mc-intro">Before the speaking test begins, let's make sure your microphone sounds clear. This is a one-time check — you won't be asked again during the test.</p>
+      <label class="mc-label" for="mic-select">Microphone</label>
+      <div class="mic-check-row">
+        <select id="mic-select" class="mic-select"></select>
+      </div>
+      <div class="mc-stage" id="mc-stage" data-state="idle">
+        <div class="mc-state-icon" id="mc-icon">🎤</div>
+        <div class="mc-state-text" id="mc-state-text">Tap “Test My Microphone”, then say a few words.</div>
+        <div class="mic-meter"><div class="mic-meter-fill" id="mic-meter-fill"></div></div>
+      </div>
+      <div class="mc-actions"><button class="play-btn" id="btn-mic-test">Test My Microphone</button></div>
+      <div id="mic-test-player"></div>
+      <div class="mic-hint" id="mic-hint"></div>
+      <div class="nav"><button class="primary" id="btn-mic-continue">Continue to Speaking Test</button></div>
+    </div>
+  </div>
+
   <div class="screen" id="screen-speak">
     <div class="card">
       <span class="tag">Speaking</span>
-      <div class="mic-check" id="mic-check">
-        <div class="mic-check-head">Microphone check</div>
-        <div class="mic-check-row">
-          <select id="mic-select" class="mic-select"></select>
-          <button class="rec-btn" id="btn-mic-test">Test Mic</button>
-        </div>
-        <div class="mic-meter"><div class="mic-meter-fill" id="mic-meter-fill"></div></div>
-        <div class="mic-hint" id="mic-hint">Pick your mic and tap Test — speak, watch the bar move, then hear it back before you start.</div>
-        <audio id="mic-test-audio" controls style="display:none; width:100%; margin-top:8px;"></audio>
-      </div>
       <div class="qcount" id="speak-qcount"></div>
       <div class="prompt-box" id="speak-prompt"></div>
       <div class="try-note" id="speak-try-note">You may record up to 2 times per prompt.</div>
@@ -189,7 +215,7 @@
         <span class="rec-dot" id="rec-dot"></span>
         <span class="rec-status" id="rec-status">Not recorded yet</span>
       </div>
-      <audio id="speak-audio" controls style="display:none;"></audio>
+      <div id="speak-player"></div>
       <div class="nav"><button class="primary" id="btn-speak-next" disabled>Next</button></div>
     </div>
   </div>
@@ -222,12 +248,10 @@ const CONFIG = {
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltYXh0a2FxZnNwc2phdW5mbXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NzY0NzQsImV4cCI6MjA5NzQ1MjQ3NH0.VchQxSTvkt5EczAyNQ4YuMLCaNqK1B9qKQX0waHCdAc',
 };
 
-const SECTIONS = [
-  { key:'intermediate', label:'Intermediate' },
-  { key:'advanced', label:'Advanced' },
-  { key:'listening', label:'Listening' },
-  { key:'speaking', label:'Speaking' },
-];
+const SECTION_ORDER = ['intermediate','advanced','listening','speaking'];
+const SECTION_LABELS = { intermediate:'Intermediate', advanced:'Advanced', listening:'Listening', speaking:'Speaking' };
+let SECTIONS = SECTION_ORDER.map(k=>({ key:k, label:SECTION_LABELS[k] }));
+let flow = [];
 
 const MAX_LISTEN_PLAYS = 2;
 const MAX_RECORD_ATTEMPTS = 2;
@@ -291,6 +315,45 @@ function renderSections(done){
   });
 }
 
+function sectionPresent(s){
+  if(s==='intermediate') return !!(testData.tiers && testData.tiers.intermediate);
+  if(s==='advanced') return !!(testData.tiers && testData.tiers.advanced);
+  if(s==='listening') return Array.isArray(testData.listening) && testData.listening.length>0;
+  if(s==='speaking') return Array.isArray(testData.speaking) && testData.speaking.length>0;
+  return false;
+}
+function buildFlow(){
+  const explicit = Array.isArray(testData.sections) && testData.sections.length ? testData.sections : null;
+  flow = SECTION_ORDER.filter(s => (explicit ? explicit.includes(s) : true) && sectionPresent(s));
+  SECTIONS = flow.map(k=>({ key:k, label:SECTION_LABELS[k] }));
+}
+function advancedHasWritten(){
+  const adv = testData.tiers && testData.tiers.advanced;
+  return !!(adv && Array.isArray(adv.written) && adv.written.length);
+}
+function startSection(name){
+  const idx = flow.indexOf(name);
+  if(idx>=0) sectionIdx = idx;
+  renderSections();
+  if(name==='intermediate' || name==='advanced'){
+    mcqTier = name;
+    startMcqSection();
+  } else if(name==='listening'){
+    listenIdx = 0;
+    renderListening();
+    showScreen('screen-listening');
+  } else if(name==='speaking'){
+    showScreen('screen-mic-check');
+    setMcState('idle','Tap “Test My Microphone”, then say a few words.');
+    setupMicDevices();
+  }
+}
+function advanceSection(current){
+  const next = flow[flow.indexOf(current)+1];
+  if(next){ startSection(next); }
+  else { showScreen('screen-submitting'); submitAll(); }
+}
+
 async function init(){
   if(!token){
     $('error-msg').textContent = "No record token found in this link. Use the link your manager sent you.";
@@ -299,10 +362,10 @@ async function init(){
   }
   try{
     testData = await callFn('get-questions', { token });
+    buildFlow();
+    if(!flow.length){ throw new Error('This test has no sections assigned. Please contact your manager.'); }
     sectionIdx = 0;
-    mcqTier = 'intermediate';
-    renderSections();
-    startMcqSection();
+    startSection(flow[0]);
   } catch(e){
     $('error-msg').textContent = e.message;
     showScreen('screen-error');
@@ -347,9 +410,12 @@ function renderMcq(){
   $('btn-mcq-next').disabled = existing===undefined;
   if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
   const isLast = mcqIdx === mcqList.length - 1;
-  $('btn-mcq-next').textContent = isLast
-    ? (mcqTier === 'intermediate' ? 'Continue to Advanced' : 'Continue to Written')
-    : 'Next';
+  let mcqNextLabel = 'Next';
+  if(isLast){
+    if(mcqTier === 'advanced' && advancedHasWritten()){ mcqNextLabel = 'Continue to Written'; }
+    else { const nx = flow[flow.indexOf(mcqTier)+1]; mcqNextLabel = nx ? `Continue to ${SECTION_LABELS[nx]}` : 'Submit Assessment'; }
+  }
+  $('btn-mcq-next').textContent = mcqNextLabel;
 }
 
 $('btn-mcq-next').addEventListener('click', ()=>{
@@ -357,17 +423,12 @@ $('btn-mcq-next').addEventListener('click', ()=>{
     mcqIdx++; renderMcq();
     return;
   }
-  if(mcqTier === 'intermediate'){
-    sectionIdx = 1;
-    mcqTier = 'advanced';
-    renderSections();
-    startMcqSection();
-  } else {
-    sectionIdx = 1;
-    renderSections();
+  if(mcqTier === 'advanced' && advancedHasWritten()){
     writtenIdx = 0;
     renderWritten();
     showScreen('screen-written');
+  } else {
+    advanceSection(mcqTier);
   }
 });
 
@@ -378,7 +439,8 @@ function renderWritten(){
   $('written-prompt').textContent = item.prompt;
   $('written-input').value = written[item.id] || '';
   $('btn-written-next').disabled = !($('written-input').value.trim().length);
-  $('btn-written-next').textContent = writtenIdx === prompts.length - 1 ? 'Continue to Listening' : 'Next';
+  const wNext = flow[flow.indexOf('advanced')+1];
+  $('btn-written-next').textContent = writtenIdx === prompts.length - 1 ? (wNext ? `Continue to ${SECTION_LABELS[wNext]}` : 'Submit Assessment') : 'Next';
 }
 
 $('written-input').addEventListener('input', e=>{
@@ -392,11 +454,7 @@ $('btn-written-next').addEventListener('click', ()=>{
     writtenIdx++;
     renderWritten();
   } else {
-    sectionIdx = 2;
-    listenIdx = 0;
-    renderSections();
-    renderListening();
-    showScreen('screen-listening');
+    advanceSection('advanced');
   }
 });
 
@@ -449,7 +507,8 @@ function renderListening(){
     $('btn-listen-next').disabled = existing===undefined;
     if(existing!==undefined) optsDiv.children[existing].classList.add('selected');
   }
-  $('btn-listen-next').textContent = listenIdx === testData.listening.length - 1 ? 'Continue to Speaking' : 'Next';
+  const lNext = flow[flow.indexOf('listening')+1];
+  $('btn-listen-next').textContent = listenIdx === testData.listening.length - 1 ? (lNext ? `Continue to ${SECTION_LABELS[lNext]}` : 'Submit Assessment') : 'Next';
 }
 
 $('listen-written-input').addEventListener('input', e=>{
@@ -478,12 +537,7 @@ $('btn-listen-next').addEventListener('click', ()=>{
   if(listenIdx < testData.listening.length - 1){
     listenIdx++; renderListening();
   } else {
-    sectionIdx = 3;
-    speakIdx = 0;
-    renderSections();
-    renderSpeak();
-    showScreen('screen-speak');
-    setupMicDevices();
+    advanceSection('listening');
   }
 });
 
@@ -494,14 +548,13 @@ function renderSpeak(){
   $('speak-qcount').textContent = `${item.id} — Item ${speakIdx+1} of ${testData.speaking.length}`;
   $('speak-try-note').textContent = `You may record up to ${MAX_RECORD_ATTEMPTS} times per prompt — ${remaining} attempt${remaining===1?'':'s'} remaining.`;
   $('speak-prompt').textContent = item.prompt;
-  const audioEl = $('speak-audio');
+  const wrap = $('speak-player');
+  wrap.innerHTML='';
   const existing = audioSpeaking[speakIdx];
   if(existing){
-    audioEl.src = 'data:audio/webm;base64,'+existing;
-    audioEl.style.display='block';
+    wrap.appendChild(buildAudioPlayer('data:audio/webm;base64,'+existing,'metadata'));
     $('rec-status').textContent='Recorded';
   } else {
-    audioEl.style.display='none';
     $('rec-status').textContent='Not recorded yet';
   }
   $('btn-record').classList.remove('recording');
@@ -566,59 +619,109 @@ async function setupMicDevices(){
   }catch(e){ /* ignore enumerate errors */ }
 }
 
-let testRec=null, testChunks=[], testAudioCtx=null, testRaf=null;
+let testRec=null, testChunks=[], testAudioCtx=null, testRaf=null, micTestCountdown=null;
+
+function buildAudioPlayer(src, preload){
+  const wrap=document.createElement('div'); wrap.className='aplayer';
+  const btn=document.createElement('button'); btn.type='button'; btn.className='aplayer-btn'; btn.textContent='▶'; btn.setAttribute('aria-label','Play');
+  const track=document.createElement('div'); track.className='aplayer-track';
+  const prog=document.createElement('div'); prog.className='aplayer-prog'; track.appendChild(prog);
+  const time=document.createElement('span'); time.className='aplayer-time'; time.textContent='0:00';
+  const audio=document.createElement('audio'); audio.preload=preload||'metadata'; if(src) audio.src=src;
+  wrap.appendChild(btn); wrap.appendChild(track); wrap.appendChild(time); wrap.appendChild(audio);
+  const fmt=(t)=>{ if(!isFinite(t)||t<0)t=0; const m=Math.floor(t/60); const s=String(Math.floor(t%60)).padStart(2,'0'); return m+':'+s; };
+  function upd(){ const d=audio.duration,c=audio.currentTime; prog.style.width=(d?(c/d*100):0)+'%'; time.textContent=(d&&isFinite(d))?(fmt(c)+' / '+fmt(d)):fmt(c); }
+  btn.addEventListener('click',()=>{ if(audio.paused)audio.play(); else audio.pause(); });
+  audio.addEventListener('play',()=>{ btn.textContent='⏸'; });
+  audio.addEventListener('pause',()=>{ btn.textContent='▶'; });
+  audio.addEventListener('ended',()=>{ btn.textContent='▶'; audio.currentTime=0; prog.style.width='0%'; upd(); });
+  audio.addEventListener('timeupdate',upd);
+  audio.addEventListener('loadedmetadata',upd);
+  track.addEventListener('click',e=>{ const r=track.getBoundingClientRect(); const ratio=(e.clientX-r.left)/r.width; if(audio.duration) audio.currentTime=Math.max(0,Math.min(1,ratio))*audio.duration; });
+  wrap._audio=audio;
+  return wrap;
+}
+
+function setMcState(state, text){
+  const stage=$('mc-stage'); if(stage) stage.setAttribute('data-state', state);
+  const icons={ idle:'🎤', recording:'🔴', playing:'🔊', done:'✓' };
+  if($('mc-icon')) $('mc-icon').textContent = icons[state]||'🎤';
+  if(text!==undefined && $('mc-state-text')) $('mc-state-text').textContent = text;
+}
+
+function cleanupMicTest(){
+  if(micTestCountdown){ clearInterval(micTestCountdown); micTestCountdown=null; }
+  if(testRaf){ cancelAnimationFrame(testRaf); testRaf=null; }
+  if(testRec && testRec.state!=='inactive'){ try{ testRec.stop(); }catch(_){ } }
+  if(testAudioCtx){ try{ testAudioCtx.close(); }catch(_){ } testAudioCtx=null; }
+  if($('mic-meter-fill')) $('mic-meter-fill').style.width='0%';
+}
+
 async function startMicTest(){
+  const btn=$('btn-mic-test');
+  btn.disabled=true;
+  $('mic-test-player').innerHTML='';
+  $('mic-hint').textContent='';
   try{
-    const stream = await getMicStream();
-    testAudioCtx = new (window.AudioContext||window.webkitAudioContext)();
-    const srcNode = testAudioCtx.createMediaStreamSource(stream);
-    const analyser = testAudioCtx.createAnalyser();
-    analyser.fftSize = 512;
+    const stream=await getMicStream();
+    testAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    const srcNode=testAudioCtx.createMediaStreamSource(stream);
+    const analyser=testAudioCtx.createAnalyser(); analyser.fftSize=512;
     srcNode.connect(analyser);
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    const fill = $('mic-meter-fill');
-    const tick = ()=>{
-      analyser.getByteTimeDomainData(data);
-      let peak=0;
-      for(let i=0;i<data.length;i++){ const v=Math.abs(data[i]-128); if(v>peak) peak=v; }
-      fill.style.width = Math.min(100, Math.round((peak/128)*180)) + '%';
-      testRaf = requestAnimationFrame(tick);
-    };
+    const data=new Uint8Array(analyser.frequencyBinCount);
+    const fill=$('mic-meter-fill');
+    const tick=()=>{ analyser.getByteTimeDomainData(data); let peak=0; for(let i=0;i<data.length;i++){ const v=Math.abs(data[i]-128); if(v>peak)peak=v; } fill.style.width=Math.min(100,Math.round((peak/128)*180))+'%'; testRaf=requestAnimationFrame(tick); };
     tick();
     testChunks=[];
-    testRec = new MediaRecorder(stream, recorderOpts());
+    testRec=new MediaRecorder(stream, recorderOpts());
     testRec.ondataavailable=e=>testChunks.push(e.data);
     testRec.onstop=()=>{
-      const blob=new Blob(testChunks,{type:'audio/webm'});
-      const a=$('mic-test-audio');
-      a.src=URL.createObjectURL(blob); a.style.display='block';
+      if(testRaf){ cancelAnimationFrame(testRaf); testRaf=null; }
+      if(testAudioCtx){ try{ testAudioCtx.close(); }catch(_){ } testAudioCtx=null; }
+      if(fill) fill.style.width='0%';
+      const url=URL.createObjectURL(new Blob(testChunks,{type:'audio/webm'}));
+      const player=buildAudioPlayer(url,'metadata');
+      $('mic-test-player').innerHTML='';
+      $('mic-test-player').appendChild(player);
+      setMcState('playing','▶ Playing back — listen to how you sound.');
+      player._audio.addEventListener('ended',()=>{
+        setMcState('done','Did that sound clear and close? If yes, you\'re ready. If it sounded far or noisy, choose another mic and test again.');
+        btn.disabled=false; btn.textContent='Test Again';
+      });
+      const p=player._audio.play();
+      if(p&&p.catch) p.catch(()=>{
+        setMcState('done','Tap ▶ above to hear your test. If it sounds clear and close, you\'re ready.');
+        btn.disabled=false; btn.textContent='Test Again';
+      });
     };
     testRec.start();
-    $('btn-mic-test').textContent='Stop Test';
-    $('btn-mic-test').classList.add('recording');
-    $('mic-hint').textContent='Speak now — watch the bar. Tap Stop Test to hear your sample.';
+    let remaining=5;
+    setMcState('recording', `Recording… speak now (${remaining})`);
+    btn.textContent='Recording…';
+    micTestCountdown=setInterval(()=>{
+      remaining--;
+      if(remaining>0) setMcState('recording', `Recording… speak now (${remaining})`);
+      else { clearInterval(micTestCountdown); micTestCountdown=null; if(testRec&&testRec.state!=='inactive') testRec.stop(); }
+    },1000);
   }catch(e){
-    $('mic-hint').textContent='Could not access this mic: '+(e.message||e);
+    cleanupMicTest();
+    setMcState('idle','Could not access this microphone.');
+    $('mic-hint').textContent='Microphone error: '+(e.message||e);
+    btn.disabled=false; btn.textContent='Test My Microphone';
   }
 }
-function stopMicTest(){
-  if(testRaf){ cancelAnimationFrame(testRaf); testRaf=null; }
-  if(testRec && testRec.state!=='inactive'){ testRec.stop(); }
-  if(testAudioCtx){ try{ testAudioCtx.close(); }catch(_){ } testAudioCtx=null; }
-  $('mic-meter-fill').style.width='0%';
-  $('btn-mic-test').textContent='Test Mic';
-  $('btn-mic-test').classList.remove('recording');
-  $('mic-hint').textContent='If the playback sounds clear and close, you\'re ready. If it sounds far or noisy, pick another mic and test again.';
-}
-$('btn-mic-test').addEventListener('click', ()=>{
-  if($('btn-mic-test').classList.contains('recording')) stopMicTest();
-  else startMicTest();
+$('btn-mic-test').addEventListener('click', startMicTest);
+
+$('btn-mic-continue').addEventListener('click', ()=>{
+  cleanupMicTest();
+  speakIdx=0;
+  renderSpeak();
+  showScreen('screen-speak');
 });
 
 $('btn-record').addEventListener('click', async ()=>{
   const btn = $('btn-record');
   if(btn.classList.contains('recording')){ mediaRecorder.stop(); return; }
-  if($('btn-mic-test').classList.contains('recording')) stopMicTest();
   const attempts = recordAttempts[speakIdx] || 0;
   if(attempts >= MAX_RECORD_ATTEMPTS){
     $('rec-status').textContent='No recording attempts remaining.';
@@ -644,13 +747,12 @@ $('btn-record').addEventListener('click', async ()=>{
   }
 });
 
-$('btn-speak-next').addEventListener('click', async ()=>{
+$('btn-speak-next').addEventListener('click', ()=>{
   if(!audioSpeaking[speakIdx]) return;
   if(speakIdx < testData.speaking.length - 1){
     speakIdx++; renderSpeak();
   } else {
-    showScreen('screen-submitting');
-    await submitAll();
+    advanceSection('speaking');
   }
 });
 
@@ -661,6 +763,7 @@ async function submitAll(){
       answers,
       written,
       audio: { speaking: audioSpeaking },
+      sections: flow,
     });
     stopRecTimer();
     if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
