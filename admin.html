@@ -472,11 +472,17 @@ function renderWrittenPreview(items){
 }
 
 function renderSpeakingPreview(items){
-  return items.map(s => `<div class="preview-q">
-    <span class="preview-id">${escapeHtml(s.id)} — voice recording</span>
-    <div class="preview-written">${escapeHtml(s.prompt)}</div>
-    <p style="font-size:11px;color:var(--gray);margin-top:6px;">Candidate records answer · scored manually 0–5</p>
-  </div>`).join('');
+  return items.map(s => {
+    const audio = s.audioFile ? `<div class="aplayer-src" data-src="${escapeHtml(assetUrl(s.audioFile))}" data-preload="none"></div>` : '';
+    const script = s.script ? `<div class="preview-script">"${escapeHtml(s.script)}"</div>` : '';
+    const label = s.audioFile ? 'broker call + voice recording' : 'voice recording';
+    return `<div class="preview-q">
+      <span class="preview-id">${escapeHtml(s.id)} — ${label}</span>
+      ${audio}${script}
+      <div class="preview-written">${escapeHtml(s.prompt)}</div>
+      <p style="font-size:11px;color:var(--gray);margin-top:6px;">Candidate records answer · scored manually 0–5</p>
+    </div>`;
+  }).join('');
 }
 
 function previewSection(title, count, innerHtml, open){

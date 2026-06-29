@@ -209,6 +209,11 @@
     <div class="card">
       <span class="tag">Speaking</span>
       <div class="qcount" id="speak-qcount"></div>
+      <div class="listen-row hidden" id="speak-listen-row">
+        <button class="play-btn" id="btn-play-broker">▶ Play Call</button>
+        <span class="listen-tries" id="speak-listen-tries"></span>
+        <audio class="listen-audio" id="speak-broker-audio" preload="auto"></audio>
+      </div>
       <div class="prompt-box" id="speak-prompt"></div>
       <div class="try-note" id="speak-try-note">You may record up to 2 times per prompt.</div>
       <div class="rec-row">
@@ -273,6 +278,7 @@ let answers = {
 };
 let written = {};
 let listenPlays = {};
+let speakPlays = {};
 let recordAttempts = [0, 0, 0, 0, 0];
 let audioSpeaking = [null, null, null, null, null];
 let mediaStream=null, mediaRecorder=null, chunks=[];
@@ -547,6 +553,16 @@ function renderSpeak(){
   const attempts = recordAttempts[speakIdx] || 0;
   const remaining = MAX_RECORD_ATTEMPTS - attempts;
   $('speak-qcount').textContent = `${item.id} — Item ${speakIdx+1} of ${testData.speaking.length}`;
+  const brokerRow = $('speak-listen-row');
+  if(item.audioFile){
+    brokerRow.classList.remove('hidden');
+    const audioEl = $('speak-broker-audio');
+    audioEl.src = item.audioFile;
+    audioEl.load();
+    updateSpeakTries(item);
+  } else {
+    brokerRow.classList.add('hidden');
+  }
   $('speak-try-note').textContent = `You may record up to ${MAX_RECORD_ATTEMPTS} times per prompt — ${remaining} attempt${remaining===1?'':'s'} remaining.`;
   $('speak-prompt').textContent = item.prompt;
   const wrap = $('speak-player');
@@ -564,6 +580,22 @@ function renderSpeak(){
   $('btn-speak-next').disabled = !audioSpeaking[speakIdx];
   $('btn-speak-next').textContent = speakIdx === testData.speaking.length - 1 ? 'Submit Assessment' : 'Next';
 }
+
+function updateSpeakTries(item){
+  const used = speakPlays[item.id] || 0;
+  const remaining = MAX_LISTEN_PLAYS - used;
+  $('speak-listen-tries').textContent = remaining <= 0 ? 'No plays remaining' : `${remaining} of ${MAX_LISTEN_PLAYS} plays remaining`;
+  $('btn-play-broker').disabled = remaining <= 0;
+}
+
+$('btn-play-broker').addEventListener('click', ()=>{
+  const item = testData.speaking[speakIdx];
+  const used = speakPlays[item.id] || 0;
+  if(used >= MAX_LISTEN_PLAYS) return;
+  speakPlays[item.id] = used + 1;
+  updateSpeakTries(item);
+  $('speak-broker-audio').play();
+});
 
 function fmtTime(s){ const m=Math.floor(s/60); const ss=String(s%60).padStart(2,'0'); return `${m}:${ss}`; }
 function startRecTimer(){

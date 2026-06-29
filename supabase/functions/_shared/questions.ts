@@ -25,7 +25,10 @@ export type ListeningItem = {
 
 export type SpeakingItem = {
   id: string;
-  prompt: string;
+  prompt: string;            // on-screen instruction the candidate reads
+  type?: 'text' | 'call';    // 'call' items play a broker-voice clip before recording
+  script?: string;           // broker's spoken words (admin transcript only; stripped from candidate)
+  audioFile?: string;        // path to the broker-call clip for 'call' items
 };
 
 export const QUESTION_BANK: Record<string, { vocab: Question[]; premises: Question[] }> = {
@@ -162,11 +165,11 @@ export const LISTENING: ListeningItem[] = [
 ];
 
 export const SPEAKING: SpeakingItem[] = [
-  { id: 'S1', prompt: 'Explain to a new dispatcher the difference between a set appointment and FCFS (first come, first served).' },
-  { id: 'S2', prompt: "A driver looks at 'Reefer 53' on the RC and assumes it means set the reefer to 53 degrees. Explain what's actually going on and why that assumption is a mistake." },
-  { id: 'S3', prompt: 'Explain why you should never use BCC on a load email thread, and what a BCC might be a sign of.' },
-  { id: 'S4', prompt: "A load fell through right before pickup. Explain to the broker what a TONU is and why you're requesting it." },
-  { id: 'S5', prompt: "Walk through what 'Shipper Load & Count' means, when it applies, and what you must do to protect the carrier." },
+  { id: 'S1', type: 'text', prompt: 'At pickup there\'s a difference in the delivery location — the address on the BOL doesn\'t match the one on the rate confirmation. Call the broker, verify the correct delivery location, and tell them what information you need to check the load and get it good-to-go (g2g). Record what you would say to the broker.' },
+  { id: 'S2', type: 'text', prompt: 'You booked a load where the phone deal was 1 hook + 1 drop-off, but the RC says 1 hook + live unload. Call the broker, point out the phone deal, and ask them to correct the RC. Record what you would say.' },
+  { id: 'S3', type: 'call', audioFile: 'audio/S3.mp3', script: 'Hi, this is Dave over at Summit Logistics. I\'m calling to let you know we just filed a FreightGuard report on your carrier — your driver no-showed the pickup this morning and never answered our calls. I wanted to reach out before this goes any further. How do you want to handle it?', prompt: 'The broker has filed a FreightGuard report against us. How would you respond? Record your answer.' },
+  { id: 'S4', type: 'call', audioFile: 'audio/S4.mp3', script: 'Hi, this is Maria with Coyote. Before I send over any load details, I need to verify you really are dispatching for this MC and not double-brokering or running a scam. Can you confirm if Andrew Watson is part of your team?', prompt: 'The broker wants to verify you\'re a legitimate dispatcher for our MC and not a scammer. How should you answer the call and verify? Record your answer.' },
+  { id: 'S5', type: 'call', audioFile: 'audio/S5.mp3', script: 'Hey, it\'s Tom at Scotlynn. I see the tracking is off — what\'s the ETA on this load 1263527? When\'s your driver going to deliver?', prompt: 'The broker is asking for an ETA on the load and mentioned that the tracking is off. How would you respond? Record your answer.' },
 ];
 
 export function publicQuestions(tier: string) {
@@ -185,7 +188,10 @@ export function publicListening() {
 }
 
 export function publicSpeaking() {
-  return SPEAKING.map(({ id, prompt }) => ({ id, prompt }));
+  return SPEAKING.map(({ id, prompt, type, audioFile }) =>
+    audioFile
+      ? { id, prompt, type: 'call' as const, audioFile }
+      : { id, prompt, type: 'text' as const });
 }
 
 export function band(score: number, total: number): string {
