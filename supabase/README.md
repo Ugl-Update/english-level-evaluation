@@ -15,7 +15,13 @@ supabase/
     submit-assessment/index.ts     -- grades MCQ, stores/merges results
     create-retest/index.ts         -- re-issues selected sections (new link)
     get-results/index.ts           -- admin: results + attempt history
+    create-employee/index.ts       -- admin: create employee, return token
+    list-employees/index.ts        -- admin: list employees + status
+    preview-questions/index.ts     -- admin: full bank incl. answer keys + scripts
+    save-manual-scores/index.ts    -- admin: save 0-5 manual scores
 ```
+
+`get-questions`, `submit-assessment`, and `preview-questions` import the shared bank.
 
 ## ⚠️ Two things to know when pasting into the Dashboard
 1. **Shared file path.** In the Dashboard, each function carries its **own copy** of
@@ -38,13 +44,10 @@ supabase/
 - Bucket `dispatch-test-audio` holds speaking recordings at `<token>/speaking_<i>.webm`,
   served to the admin via 1-year signed URLs.
 
-## Not yet in this repo
-These functions exist in the Dashboard but their source hasn't been copied here yet.
-Paste them in to complete the backup:
-- `list-employees`
-- `create-employee`
-- `preview-questions`
-- `save-manual-scores`
+## Coverage
+All eight Edge Functions and the schema are now mirrored here. This is a
+reference/backup copy — editing files here does **not** auto-deploy; changes are
+applied by pasting into the Dashboard (or via the CLI).
 
 ## Deploying (optional, via CLI)
 With the Supabase CLI authenticated (`supabase login`) you could deploy from this
