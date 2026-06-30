@@ -142,7 +142,7 @@ export const LISTENING: ListeningItem[] = [
   {
     id: 'L7',
     type: 'mcq',
-    script: 'Report any over, short, or damaged freight with pictures within two hours, or the claim falls on you.',
+    script: 'Report any over, short, or damaged freight with pictures within two hours of discovering the damage, or the claim falls on you.',
     audioFile: 'audio/L7.wav',
     question: 'If freight is damaged, what is the deadline to report it with pictures?',
     options: [
