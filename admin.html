@@ -427,8 +427,9 @@ function renderMcqQuestion(q){
 
 function renderMcqTier(tier, data){
   const vocab = (data.vocab || []).map(renderMcqQuestion).join('');
-  const premises = (data.premises || []).map(renderMcqQuestion).join('');
-  return `<div class="preview-sub">Vocabulary</div>${vocab}<div class="preview-sub">Premises</div>${premises}`;
+  const premisesItems = (data.premises || []);
+  const premises = premisesItems.length ? `<div class="preview-sub">Premises</div>${premisesItems.map(renderMcqQuestion).join('')}` : '';
+  return `<div class="preview-sub">Vocabulary</div>${vocab}${premises}`;
 }
 
 function renderListeningPreview(items){

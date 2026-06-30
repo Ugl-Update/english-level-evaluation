@@ -43,9 +43,7 @@ export const QUESTION_BANK: Record<string, { vocab: Question[]; premises: Questi
       { id: 'IV4', text: '"FCFS" at a stop means:', options: ['A set appointment time', 'First come, first served — no set time', 'Fast Check First Service', 'Final Confirmation From Shipper'], correct: 1 },
       { id: 'IV5', text: '"PTI" stands for:', options: ['Paperwork Tracking Index', 'Pickup Time Indicator', 'Pre-Trip Inspection', 'Power Trailer Inspection'], correct: 2 },
     ],
-    premises: [
-      { id: 'IP1', text: 'On a Power Only load, before the driver hooks to the trailer the updater should:', options: ['Hook to whichever trailer is closest and update later', 'Call dispatch to get the assigned trailer number before hooking', 'Use the BOL number printed on the BOL', 'Wait for the broker to email the trailer number'], correct: 1 },
-    ],
+    premises: [],
   },
   advanced: {
     vocab: [
