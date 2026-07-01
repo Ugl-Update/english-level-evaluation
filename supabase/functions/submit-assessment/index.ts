@@ -41,7 +41,9 @@ function gradeTier(tier: string, answers: Record<string, Record<string, Record<s
 function collectListeningReview(listeningAnswers: Record<string, number>, written: Record<string, string>) {
   return LISTENING.map((q) => {
     if (q.type === "written") {
-      return { id: q.id, type: "written", question: q.question, response: written?.[q.id] || "" };
+      const entry: Record<string, unknown> = { id: q.id, type: "written", question: q.question, response: written?.[q.id] || "" };
+      if (q.question2) { entry.question2 = q.question2; entry.response2 = written?.[`${q.id}b`] || ""; }
+      return entry;
     }
     const chosen = listeningAnswers?.[q.id];
     return {

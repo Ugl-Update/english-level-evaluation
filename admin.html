@@ -437,10 +437,12 @@ function renderListeningPreview(items){
     const audio = item.audioFile ? `<div class="aplayer-src" data-src="${escapeHtml(assetUrl(item.audioFile))}" data-preload="none"></div>` : '';
     const script = item.script ? `<div class="preview-script">"${escapeHtml(item.script)}"</div>` : '';
     if(item.type === 'written'){
+      const q2 = item.question2 ? `<p>${escapeHtml(item.question2)}</p>` : '';
       return `<div class="preview-q">
         <span class="preview-id">${escapeHtml(item.id)} — written response</span>
         ${audio}${script}
         <p>${escapeHtml(item.question)}</p>
+        ${q2}
         <p style="font-size:11px;color:var(--gray);">Scored manually 0–5</p>
       </div>`;
     }
@@ -627,6 +629,9 @@ function renderListeningReview(resultId, items, writtenResponses, tierScores){
     const script = b.script ? `<p class="rv-script"><span class="rv-label">Transcript</span>"${escapeHtml(b.script)}"</p>` : '';
     const question = item.question || b.question || '';
     if(item.type === 'written'){
+      const q2 = item.question2 || b.question2 || '';
+      const part2 = q2 ? `<p class="rv-q"><span class="rv-label">Question 2</span>${escapeHtml(q2)}</p>
+        <p class="rv-a"><span class="rv-label">Answer 2</span>${escapeHtml(item.response2 || writtenResponses?.[item.id + 'b'] || '(no response)')}</p>` : '';
       return `<div class="review-item">
         <div class="review-item-head">
           <strong>Listening — ${escapeHtml(item.id)} (written)</strong>
@@ -635,6 +640,7 @@ function renderListeningReview(resultId, items, writtenResponses, tierScores){
         ${audio}${script}
         ${question ? `<p class="rv-q"><span class="rv-label">Question</span>${escapeHtml(question)}</p>` : ''}
         <p class="rv-a"><span class="rv-label">Answer</span>${escapeHtml(item.response || writtenResponses?.[item.id] || '(no response)')}</p>
+        ${part2}
       </div>`;
     }
     const correctText = item.correctOption || (b.options && b.correct != null ? b.options[b.correct] : '');

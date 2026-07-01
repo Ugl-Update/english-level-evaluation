@@ -173,6 +173,8 @@
       <div class="try-note hidden" id="listen-written-hint">Type your written answer below.</div>
       <div class="options" id="listen-options"></div>
       <textarea id="listen-written-input" class="hidden" placeholder="Type your answer…"></textarea>
+      <div class="qtext hidden" id="listen-qtext2" style="margin-top:18px;"></div>
+      <textarea id="listen-written-input2" class="hidden" placeholder="Type your answer…"></textarea>
       <div class="nav"><button class="primary" id="btn-listen-next" disabled>Next</button></div>
     </div>
   </div>
@@ -477,6 +479,8 @@ function renderListening(){
   const optsDiv = $('listen-options');
   const writtenInput = $('listen-written-input');
   const writtenHint = $('listen-written-hint');
+  const qtext2 = $('listen-qtext2');
+  const writtenInput2 = $('listen-written-input2');
   const isWritten = item.type === 'written' || !item.options?.length;
 
   if(isWritten){
@@ -485,11 +489,20 @@ function renderListening(){
     writtenHint.classList.remove('hidden');
     writtenInput.classList.remove('hidden');
     writtenInput.value = written[item.id] || '';
-    $('btn-listen-next').disabled = !writtenInput.value.trim().length;
+    if(item.question2){
+      qtext2.textContent = item.question2; qtext2.classList.remove('hidden');
+      writtenInput2.classList.remove('hidden');
+      writtenInput2.value = written[item.id + 'b'] || '';
+    } else {
+      qtext2.classList.add('hidden'); writtenInput2.classList.add('hidden'); writtenInput2.value = '';
+    }
+    $('btn-listen-next').disabled = !listeningWrittenComplete(item);
   } else {
     writtenHint.classList.add('hidden');
     optsDiv.classList.remove('hidden');
     writtenInput.classList.add('hidden');
+    qtext2.classList.add('hidden');
+    writtenInput2.classList.add('hidden');
     optsDiv.innerHTML='';
     item.options.forEach((opt,i)=>{
       const b = document.createElement('button');
@@ -510,13 +523,21 @@ function renderListening(){
   $('btn-listen-next').textContent = listenIdx === testData.listening.length - 1 ? (lNext ? `Continue to ${SECTION_LABELS[lNext]}` : 'Submit Assessment') : 'Next';
 }
 
-$('listen-written-input').addEventListener('input', e=>{
+function listeningWrittenComplete(item){
+  if(!$('listen-written-input').value.trim().length) return false;
+  if(item.question2) return $('listen-written-input2').value.trim().length > 0;
+  return true;
+}
+
+function onListenWrittenInput(){
   const item = testData.listening[listenIdx];
   const isWritten = item.type === 'written' || !item.options?.length;
   if(isWritten){
-    $('btn-listen-next').disabled = !(e.target.value.trim().length);
+    $('btn-listen-next').disabled = !listeningWrittenComplete(item);
   }
-});
+}
+$('listen-written-input').addEventListener('input', onListenWrittenInput);
+$('listen-written-input2').addEventListener('input', onListenWrittenInput);
 
 $('btn-play-clip').addEventListener('click', ()=>{
   const item = testData.listening[listenIdx];
@@ -532,6 +553,7 @@ $('btn-listen-next').addEventListener('click', ()=>{
   const isWritten = item.type === 'written' || !item.options?.length;
   if(isWritten){
     written[item.id] = $('listen-written-input').value.trim();
+    if(item.question2){ written[item.id + 'b'] = $('listen-written-input2').value.trim(); }
   }
   if(listenIdx < testData.listening.length - 1){
     listenIdx++; renderListening();

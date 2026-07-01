@@ -18,6 +18,7 @@ export type ListeningItem = {
   script: string;
   audioFile: string;
   question: string;
+  question2?: string;   // optional second written box; answer stored under `${id}b`
   type: 'mcq' | 'written';
   options?: string[];
   correct?: number;
@@ -102,7 +103,8 @@ export const LISTENING: ListeningItem[] = [
     type: 'written',
     script: "This load is Power Only. You'll pull our trailer, not your own. Call dispatch to get the trailer number before you hook.",
     audioFile: 'audio/L2.wav',
-    question: 'In your own words, what must the driver do on this Power Only load before hooking, and why does it matter?',
+    question: 'In your own words, what must the driver do on this Power Only load before hooking?',
+    question2: 'Why does it matter?',
   },
   {
     id: 'L3',
@@ -179,7 +181,7 @@ export function publicQuestions(tier: string) {
 export function publicListening() {
   return LISTENING.map((item) => {
     if (item.type === 'written') {
-      return { id: item.id, audioFile: item.audioFile, question: item.question, type: 'written' as const };
+      return { id: item.id, audioFile: item.audioFile, question: item.question, question2: item.question2, type: 'written' as const };
     }
     return { id: item.id, audioFile: item.audioFile, question: item.question, type: 'mcq' as const, options: item.options };
   });
